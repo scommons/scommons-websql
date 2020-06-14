@@ -1,0 +1,44 @@
+language: scala
+sudo: false
+jdk:
+- oraclejdk8
+dist: trusty
+env:
+  global:
+  - TRAVIS_NODE_VERSION="9"
+  - TRAVIS_SBT_VERSION="1.2.8"
+  - secure: smQB6WtFYyV76qoCcn5y8bkYAwMAo1u9DfGWvcS81WuIWqtdZ/PifyVye3/tKuFc/BQK7uo17d0l+I3jA4Bc9Lek68mdEITpvx2zzL1T4x78ULkf+W6frF4IM5FJnRV6XZM5SlhVppo3LAQLMzGHf3tQ6Gsc5mbchL7rSz9uIOVsSVrArOdZFdlvJT+EC9GbC/XEx6JNo4ohJoymkA24ug1afLJBPW/o8V6QXA6uEkgcuxh2VeBX2xnqHpE0kRC5AZ7XD6WVUwH+DoCzthfe2kKAuGF08xW4TWWkorNKJYCy6pojcOf1TFOyKK5otyE6GFu3nh3nbO8nkZo4xmQYwM9+mM13rMuIrDoLNsfr3Rb0d0D8NEEajyJMk5yH63NZeD1wk6i0Q0+tCXC8cZfHaP5Ls8aRpaN3W+qDYY/azSLBTCSpbnri6+62wvGGBmR5vfXZiGz5ZlaMA4FlMBFGqZWp/KevCWbS7pxg+ZbT90r1eYwm9WkA/AAsW0ZtwG1obhSxwI+RvnXohpMeT6xmcvrQ2sXgo2FH7Ra8rmCY5jterWFig2y3ksHmgPmPXruM3Tkupiw97MEa228SQUKGpTiZxEXXNCg8ezwegzJrGegNDjzv6OFC4ek0HKJQJlSxStOE44tdp+VyUTJ8ZqiLh1y546I5tqT2H4zmzJ4VvE0=
+  - secure: AzmCwMSlJJwlxpfxyXm5EuUuAFMYUrtNXJVILxTE99NWwDrKag1ZP1eiNpFpYxBfPI0JCO4AcsqIlAZBLBMWiy1Un7OKSmt0U3O9fJPSqlwY8PefsK9skubcqnwLoQBPljUaGwhU1RXLpTc64K4UYbqvUCJjqgwPgUhIBri6DCccq6JpeNKM9+551McCzo5/81n1u/csxuCPfFU0hOIzL7M1lBurNlEJnOr6NrO1+9LBxMkA6FlC2BBmDr/2n+WwEU0lwc3qwBxYdhd4WqpQnzt3UwRwTOJviq85yAWKab8ABUofPk30Bus0Lkrc58TX/jMBpG1y4T2/b9fp8eWwflx9VvWy892g2bu1QXuz7S/p/YZ8rpZ+FD0xcRqq4f5WhmpGtAhbj4L+y6wz2zAiFZpYw8XuQmJJnTsD/cH+AD8ct4VKkcJ/6UL3lT+Fm6Bq8DOAeaMCFMcaDZ5DYwgx2U2ass9o9JgWoWrwdiArqKorcpy8f7XV12dIJBz3FaEHD03aMFr7mKGBvmthsCfgnb8DPiF3TeNCERLPZd2GivuXtxSw8nz2V3XRFcs+yLgH6ciVcm13xFkB7IvSeJQXW948kJxOCKkxgFF5roLAIEPGeAXf9uUc4KJZsnNvbg+kjUZ7Z9jqmQsshUToRryHryFVwByvlJtruBEU43uK2c0=
+  - secure: GQKOYEITiOm/7tv9aXy4SxefwM2mLni7Gu0mBdMLQSl82LA22hnVNGOGMBOtzhuratMYe7xjtNe1tg9Tbrafn3NRCLNdpOkpSH5KUCSuHPZ5dansq0XvKm4U+YEVG60WpHcjp7IS4XClxg7MWeatAJHcHJVagOQv+Z0eA5cDDikBC9DRQokFM7W0p5mZTBQ8BsdLofCcndVgdEHSIWHobV5Q1pgSMJcIzkY6xjT8715juCBMXldw5YiH6RkZb/Epj6L+BUnDcddCF6qdFaJKME01FQmft1Zs8FTgWtv83387krbpRVCUMO2CEcD50SVUeg253me++pxAoRDWhh4R94wHPkitHq+8FqTIMKPmdNVZzQxTonomCMLgty7fJYUsMZ/Za7r1P6JOB6scKZ2X8462gzm8MjABIIQIb9Yx2a/d4siSBRFRASJBM50+fI3MK/dv+8GEBThiPI4+5m0pVYK/c6qvlJ0NJ3PjB1C/5nWn0dsXi5Wj0rYKj1e6wS8/BN7V1kjus2yo1PmKgoaYDppZUggacEZ+B45H7hTTL55q3icN3hgTKFtUX8hLcsTzhxaLaDkrP9ePwQ6LhMwtZnM0zy7hBQETTdg29qlfoQpaD/5Iba5aECEkBnteR2BmAgJWhdQdysyH1lUDEntNDHeGmwV/GWpuBLxrNK90sM8=
+before_install:
+#- nvm install 9
+#- nvm use 9
+- node --version
+- if [ $TRAVIS_PULL_REQUEST = 'false' ]; then
+    openssl aes-256-cbc -K $encrypted_9575f030309c_key -iv $encrypted_9575f030309c_iv -in travis/secrets.tar.enc -out travis/secrets.tar -d;
+    tar xv -C travis -f travis/secrets.tar;
+  fi
+script:
+- sbt clean coverage test coverageReport &&
+  sbt coverageAggregate
+after_success:
+- sbt coveralls
+- if [ "$TRAVIS_PULL_REQUEST" == "false" ] && [ "$TRAVIS_BRANCH" == "master" -o "$TRAVIS_BRANCH" == "$TRAVIS_TAG" ]; then
+    if [ -z "$TRAVIS_TAG" ]; then
+       echo "Publish a snapshot";
+       sbt clean publish;
+    else
+       echo "Publish a release version=$TRAVIS_TAG";
+       version=$TRAVIS_TAG sbt clean publishSigned sonatypeRelease;
+    fi
+  else
+    echo "This is not a master branch commit. Skipping the publish/release step";
+  fi
+cache:
+  directories:
+  - "$HOME/.ivy2/cache"
+  - "$HOME/.sbt"
+before_cache:
+# Cleanup the cached directories to avoid unnecessary cache updates
+- find $HOME/.ivy2/cache -name "ivydata-*.properties" -print -delete
+- find $HOME/.sbt        -name "*.lock"               -print -delete
