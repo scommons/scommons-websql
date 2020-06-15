@@ -7,6 +7,11 @@
 ## Scala Commons Web SQL
 [Scala.js](https://www.scala-js.org) facade and bindings for [WebSQL API](https://www.w3.org/TR/webdatabase/)
 
+It's relying on the following reference implementation:
+https://github.com/nolanlawson/node-websql
+
+This API can be backed by [SQLite](https://www.sqlite.org) on Node.js
+and `react-native` platforms.
 
 ### How to add it to your project
 
