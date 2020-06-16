@@ -15,7 +15,9 @@ lazy val `scommons-websql` = (project in file("."))
     ideExcludedDirectories += baseDirectory.value / "docs" / "_site"
   )
   .aggregate(
-  `scommons-websql-core`
+  `scommons-websql-core`,
+  `scommons-websql-quill`
 )
 
 lazy val `scommons-websql-core` = WebSqlCore.definition
+lazy val `scommons-websql-quill` = WebSqlQuill.definition

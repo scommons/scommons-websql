@@ -13,13 +13,17 @@ https://github.com/nolanlawson/node-websql
 This API can be backed by [SQLite](https://www.sqlite.org) on Node.js
 and `react-native` platforms.
 
+To use [quill](https://getquill.io) bindings include `scommons-websql-quill`
+library.
+
 ### How to add it to your project
 
 ```scala
 val scommonsWebSqlVer = "1.0.0-SNAPSHOT"
 
 libraryDependencies ++= Seq(
-  "org.scommons.websql" %%% "scommons-websql-core" % scommonsWebSqlVer
+  "org.scommons.websql" %%% "scommons-websql-core" % scommonsWebSqlVer,
+  "org.scommons.websql" %%% "scommons-websql-quill" % scommonsWebSqlVer
 )
 ```
 
