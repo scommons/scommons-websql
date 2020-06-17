@@ -1,7 +1,7 @@
 package scommons.websql.quill
 
 import io.getquill.SnakeCase
+import scommons.websql.Database
 
-sealed class TestSqliteContext extends SqliteContext(SnakeCase)
-
-object TestSqliteContext extends TestSqliteContext
+class TestSqliteContext(db: Database)
+  extends SqliteContext(SnakeCase, db)

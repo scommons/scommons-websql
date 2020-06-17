@@ -1,8 +1,7 @@
 package scommons.websql.quill
 
-import io.getquill._
+import io.getquill.{NamingStrategy, SqliteDialect}
+import scommons.websql.Database
 
-class SqliteContext[T <: NamingStrategy](naming: T)
-  extends SqlMirrorContext(SqliteDialect, naming) {
-
-}
+class SqliteContext[T <: NamingStrategy](naming: T, db: Database)
+  extends WebSqlContext(SqliteDialect, naming, db)
