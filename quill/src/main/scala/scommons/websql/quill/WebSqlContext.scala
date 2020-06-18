@@ -18,8 +18,6 @@ class WebSqlContext[I <: Idiom, N <: NamingStrategy](val idiom: I,
   extends SqlContext[I, N]
     with MirrorEncoders
     with WebSqlDecoders {
-    //with ArrayMirrorEncoding
-    //with SyncIOMonad {
 
   override type PrepareRow = Row
   override type ResultRow = Row
@@ -27,10 +25,10 @@ class WebSqlContext[I <: Idiom, N <: NamingStrategy](val idiom: I,
   override type Result[T] = T
   override type RunQueryResult[T] = Future[Seq[T]]
   override type RunQuerySingleResult[T] = Future[T]
-  override type RunActionResult = ActionMirror
-  override type RunActionReturningResult[T] = ActionReturningMirror[T]
-  override type RunBatchActionResult = BatchActionMirror
-  override type RunBatchActionReturningResult[T] = BatchActionReturningMirror[T]
+  override type RunActionResult = Future[Int]
+  override type RunActionReturningResult[T] = Future[Int]
+  override type RunBatchActionResult = Future[Seq[Int]]
+  override type RunBatchActionReturningResult[T] = Future[Seq[Int]]
 
   override def close(): Unit = ()
 
@@ -48,15 +46,10 @@ class WebSqlContext[I <: Idiom, N <: NamingStrategy](val idiom: I,
     }.flatMap(_ => resultF)
   }
 
-  case class ActionMirror(string: String, prepareRow: PrepareRow)
-
-  case class ActionReturningMirror[T](string: String, prepareRow: PrepareRow, extractor: Extractor[T], returningColumn: String)
-
-  case class BatchActionMirror(groups: List[(String, List[Row])])
-
-  case class BatchActionReturningMirror[T](groups: List[(String, String, List[PrepareRow])], extractor: Extractor[T])
-
-  def executeQuery[T](sql: String, prepare: Prepare, extractor: Extractor[T])(implicit tx: Transaction): Future[List[T]] = {
+  def executeQuery[T](sql: String,
+                      prepare: Prepare,
+                      extractor: Extractor[T])(implicit tx: Transaction): Future[List[T]] = {
+    
     val (_, values) = prepare(Row())
     
     executeSql(sql, values.data).map { resultSet =>
@@ -68,35 +61,52 @@ class WebSqlContext[I <: Idiom, N <: NamingStrategy](val idiom: I,
     }
   }
 
-  def executeQuerySingle[T](sql: String, prepare: Prepare, extractor: Extractor[T])(implicit tx: Transaction): Future[T] = {
+  def executeQuerySingle[T](sql: String,
+                            prepare: Prepare,
+                            extractor: Extractor[T])(implicit tx: Transaction): Future[T] = {
+    
     executeQuery(sql, prepare, extractor).map(handleSingleResult)
   }
 
-  def executeAction(string: String, prepare: Prepare = identityPrepare) = {
+  def executeAction(sql: String, prepare: Prepare)(implicit tx: Transaction): Future[Int] = {
     val (_, values) = prepare(Row())
-    val res = ActionMirror(string, values)
-    println(s"executeAction: prepare: $prepare, res: $res")
-    res
+
+    executeSql(sql, values.data).map(_.rowsAffected)
   }
 
-  def executeActionReturning[O](string: String, prepare: Prepare, extractor: Extractor[O], returningColumn: String) =
-    ActionReturningMirror[O](string, prepare(Row())._2, extractor, returningColumn)
+  def executeActionReturning(sql: String,
+                             prepare: Prepare,
+                             extractor: Extractor[Int],
+                             returningColumn: String
+                            )(implicit tx: Transaction): Future[Int] = {
+    
+    val (_, values) = prepare(Row())
 
-  def executeBatchAction(groups: List[BatchGroup]) =
-    BatchActionMirror {
-      groups.map {
-        case BatchGroup(string, prepare) =>
-          (string, prepare.map(p => Row(p(Row())._2)))
-      }
-    }
+    executeSql(sql, values.data).map(_.insertId.getOrElse(
+      throw new IllegalStateException(s"insertId is required, but wasn't returned: $sql")
+    ))
+  }
 
-  def executeBatchActionReturning[T](groups: List[BatchGroupReturning], extractor: Extractor[T]) =
-    BatchActionReturningMirror[T](
-      groups.map {
-        case BatchGroupReturning(string, column, prepare) =>
-          (string, column, prepare.map(_ (Row())._2))
-      }, extractor
-    )
+  def executeBatchAction(groups: List[BatchGroup])(implicit tx: Transaction): Future[Seq[Int]] = {
+    Future.sequence(groups.map {
+      case BatchGroup(sql, prepareList) =>
+        Future.sequence(prepareList.map { prepare =>
+          executeAction(sql, prepare)
+        })
+    }).map(_.flatten)
+  }
+
+  def executeBatchActionReturning(groups: List[BatchGroupReturning],
+                                  extractor: Extractor[Int]
+                                 )(implicit tx: Transaction): Future[List[Int]] = {
+
+    Future.sequence(groups.map {
+      case BatchGroupReturning(sql, column, prepareList) =>
+        Future.sequence(prepareList.map { prepare =>
+          executeActionReturning(sql, prepare, extractor, column)
+        })
+    }).map(_.flatten)
+  }
 }
   
 object WebSqlContext {
