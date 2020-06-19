@@ -1,10 +1,11 @@
 package scommons.websql.quill
 
 import scommons.nodejs.test.AsyncTestSpec
-import scommons.websql.quill.SqliteContextSpec._
 import scommons.websql.{Transaction, WebSQL}
+import showcase.domain.dao.CategoryDao
+import showcase.domain.{CategoryEntity, ShowcaseDBContext}
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.Future
 import scala.util.control.NonFatal
 
 class SqliteContextSpec extends AsyncTestSpec {
@@ -30,8 +31,7 @@ class SqliteContextSpec extends AsyncTestSpec {
   
   it should "return count of records" in {
     //given
-    val db = WebSQL.openDatabase(":memory:")
-    val ctx = new TestSqliteContext(db)
+    val ctx = new ShowcaseDBContext(WebSQL.openDatabase(":memory:"))
     val dao = new CategoryDao(ctx)
 
     //when
@@ -48,8 +48,7 @@ class SqliteContextSpec extends AsyncTestSpec {
   
   it should "return empty results" in {
     //given
-    val db = WebSQL.openDatabase(":memory:")
-    val ctx = new TestSqliteContext(db)
+    val ctx = new ShowcaseDBContext(WebSQL.openDatabase(":memory:"))
     val dao = new CategoryDao(ctx)
 
     //when
@@ -66,8 +65,7 @@ class SqliteContextSpec extends AsyncTestSpec {
   
   it should "return non-empty results" in {
     //given
-    val db = WebSQL.openDatabase(":memory:")
-    val ctx = new TestSqliteContext(db)
+    val ctx = new ShowcaseDBContext(WebSQL.openDatabase(":memory:"))
     val dao = new CategoryDao(ctx)
 
     //when
@@ -88,8 +86,7 @@ class SqliteContextSpec extends AsyncTestSpec {
   
   it should "combine queries using Future.sequence" in {
     //given
-    val db = WebSQL.openDatabase(":memory:")
-    val ctx = new TestSqliteContext(db)
+    val ctx = new ShowcaseDBContext(WebSQL.openDatabase(":memory:"))
     val dao = new CategoryDao(ctx)
 
     //when
@@ -112,8 +109,7 @@ class SqliteContextSpec extends AsyncTestSpec {
   
   it should "combine queries using for-comprehension" in {
     //given
-    val db = WebSQL.openDatabase(":memory:")
-    val ctx = new TestSqliteContext(db)
+    val ctx = new ShowcaseDBContext(WebSQL.openDatabase(":memory:"))
     val dao = new CategoryDao(ctx)
 
     //when
@@ -140,8 +136,7 @@ class SqliteContextSpec extends AsyncTestSpec {
   
   it should "fail if queries are inside for-comprehension" in {
     //given
-    val db = WebSQL.openDatabase(":memory:")
-    val ctx = new TestSqliteContext(db)
+    val ctx = new ShowcaseDBContext(WebSQL.openDatabase(":memory:"))
     val dao = new CategoryDao(ctx)
 
     //when
@@ -167,8 +162,7 @@ class SqliteContextSpec extends AsyncTestSpec {
   
   it should "update record" in {
     //given
-    val db = WebSQL.openDatabase(":memory:")
-    val ctx = new TestSqliteContext(db)
+    val ctx = new ShowcaseDBContext(WebSQL.openDatabase(":memory:"))
     val dao = new CategoryDao(ctx)
 
     val beforeF = ctx.transaction { implicit tx =>
@@ -210,8 +204,7 @@ class SqliteContextSpec extends AsyncTestSpec {
   
   it should "insert record" in {
     //given
-    val db = WebSQL.openDatabase(":memory:")
-    val ctx = new TestSqliteContext(db)
+    val ctx = new ShowcaseDBContext(WebSQL.openDatabase(":memory:"))
     val dao = new CategoryDao(ctx)
 
     val beforeF = ctx.transaction { implicit tx =>
@@ -254,8 +247,7 @@ class SqliteContextSpec extends AsyncTestSpec {
   
   it should "delete records" in {
     //given
-    val db = WebSQL.openDatabase(":memory:")
-    val ctx = new TestSqliteContext(db)
+    val ctx = new ShowcaseDBContext(WebSQL.openDatabase(":memory:"))
     val dao = new CategoryDao(ctx)
 
     val beforeF = ctx.transaction { implicit tx =>
@@ -294,8 +286,7 @@ class SqliteContextSpec extends AsyncTestSpec {
 
   it should "do batch update" in {
     //given
-    val db = WebSQL.openDatabase(":memory:")
-    val ctx = new TestSqliteContext(db)
+    val ctx = new ShowcaseDBContext(WebSQL.openDatabase(":memory:"))
     val dao = new CategoryDao(ctx)
 
     val beforeF = ctx.transaction { implicit tx =>
@@ -339,8 +330,7 @@ class SqliteContextSpec extends AsyncTestSpec {
 
   it should "do batch insert" in {
     //given
-    val db = WebSQL.openDatabase(":memory:")
-    val ctx = new TestSqliteContext(db)
+    val ctx = new ShowcaseDBContext(WebSQL.openDatabase(":memory:"))
     val dao = new CategoryDao(ctx)
 
     val beforeF = ctx.transaction { implicit tx =>
@@ -387,8 +377,7 @@ class SqliteContextSpec extends AsyncTestSpec {
 
   it should "rollback transaction" in {
     //given
-    val db = WebSQL.openDatabase(":memory:")
-    val ctx = new TestSqliteContext(db)
+    val ctx = new ShowcaseDBContext(WebSQL.openDatabase(":memory:"))
     val dao = new CategoryDao(ctx)
 
     val beforeF = ctx.transaction { implicit tx =>
@@ -422,138 +411,6 @@ class SqliteContextSpec extends AsyncTestSpec {
           after shouldBe before
         }
       }
-    }
-  }
-}
-
-object SqliteContextSpec {
-
-  case class CategoryEntity(id: Int, categoryName: String)
-
-  //noinspection TypeAnnotation
-  trait CategorySchema {
-
-    val ctx: TestSqliteContext
-    import ctx._
-
-    implicit val categoriesInsertMeta = insertMeta[CategoryEntity](
-      _.id
-    )
-    implicit val categoriesUpdateMeta = updateMeta[CategoryEntity](
-      _.id
-    )
-
-    val categories = quote(querySchema[CategoryEntity]("categories"))
-  }
-
-  class CategoryDao(val ctx: TestSqliteContext)(implicit ex: ExecutionContext)
-    extends CommonDao
-      with CategorySchema {
-
-    import ctx._
-
-    def getById(id: Int)(implicit tx: Transaction): Future[Option[CategoryEntity]] = {
-      getOne("getById", ctx.run(categories
-        .filter(c => c.id == lift(id))
-      ))
-    }
-
-    def count()(implicit tx: Transaction): Future[Int] = {
-      ctx.run(categories
-        .size
-      ).map(_.toInt)
-    }
-
-    def list(optOffset: Option[Int],
-             limit: Int,
-             symbols: Option[String]
-            )(implicit tx: Transaction): Future[(Seq[CategoryEntity], Option[Int])] = {
-
-      val textLower = s"%${symbols.getOrElse("").trim.toLowerCase}%"
-      val offset = optOffset.getOrElse(0)
-
-      val countQuery = optOffset match {
-        case Some(_) => Future.successful(None)
-        case None => ctx.run(categories
-          .filter(c => c.categoryName.toLowerCase.like(lift(textLower)))
-          .size
-        ).map(Some(_))
-      }
-      val fetchQuery = ctx.run(categories
-        .filter(_.categoryName.toLowerCase.like(lift(textLower)))
-        .sortBy(_.categoryName)
-        .drop(lift(offset))
-        .take(lift(limit))
-      )
-      for {
-        maybeCount <- countQuery
-        results <- fetchQuery
-      } yield {
-        (results, maybeCount.map(_.toInt))
-      }
-    }
-
-    def insert(entity: CategoryEntity)(implicit tx: Transaction): Future[Int] = {
-      ctx.run(categories
-        .insert(lift(entity))
-        .returning(_.id)
-      )
-    }
-
-    def insertMany(list: Seq[CategoryEntity])(implicit tx: Transaction): Future[Seq[Int]] = {
-      val q = quote {
-        liftQuery(list).foreach { entity =>
-          categories
-            .insert(entity)
-            .returning(_.id)
-        }
-      }
-
-      ctx.run(q)
-    }
-
-    def update(entity: CategoryEntity)(implicit tx: Transaction): Future[Boolean] = {
-      isUpdated(ctx.run(categories
-        .filter(c => c.id == lift(entity.id))
-        .update(lift(entity))
-      ))
-    }
-
-    def updateMany(list: Seq[CategoryEntity])(implicit tx: Transaction): Future[Seq[Boolean]] = {
-      val q = quote {
-        liftQuery(list).foreach { entity =>
-          categories
-            .filter(_.id == entity.id)
-            .update(entity)
-        }
-      }
-      
-      ctx.run(q).map { results =>
-        results.map(_ > 0)
-      }
-    }
-
-    def deleteAll()(implicit tx: Transaction): Future[Int] = {
-      ctx.run(categories.delete)
-    }
-  }
-
-  abstract class CommonDao(implicit ec: ExecutionContext) {
-
-    def getOne[T](queryName: String, resultsF: Future[Seq[T]]): Future[Option[T]] = {
-      resultsF.map { results =>
-        val size = results.size
-        if (size > 1) {
-          val query = s"${getClass.getSimpleName}.$queryName"
-          throw new IllegalStateException(s"Expected only single result, but got $size in $query")
-        }
-
-        results.headOption
-      }
-    }
-
-    def isUpdated[T](resultF: Future[Int]): Future[Boolean] = {
-      resultF.map(_ > 0)
     }
   }
 }
