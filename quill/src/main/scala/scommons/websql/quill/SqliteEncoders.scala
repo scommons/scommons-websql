@@ -67,7 +67,10 @@ trait SqliteEncoders {
 
   implicit val localDateEncoder: Encoder[LocalDate] =
     SqliteEncoder { (_: Index, value: LocalDate, row: PrepareRow) =>
-      val d = new js.Date(value.getYear, value.getMonthValue - 1, value.getDayOfMonth)
-      row :+ (d.getTime(): js.Any)
+      val millis: js.Any = {
+        new js.Date(value.getYear, value.getMonthValue - 1, value.getDayOfMonth)
+          .getTime()
+      }
+      row :+ millis
     }
 }
