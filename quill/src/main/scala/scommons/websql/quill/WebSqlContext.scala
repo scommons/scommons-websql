@@ -1,7 +1,6 @@
 package scommons.websql.quill
 
 import io.getquill._
-import io.getquill.context.mirror.{MirrorEncoders, Row}
 import io.getquill.context.sql.SqlContext
 import io.getquill.idiom.Idiom
 import scommons.websql.quill.WebSqlContext._
@@ -12,15 +11,13 @@ import scala.concurrent.{Future, Promise}
 import scala.scalajs.js
 import scala.util.{Failure, Success, Try}
 
-class WebSqlContext[I <: Idiom, N <: NamingStrategy](val idiom: I,
-                                                     val naming: N,
-                                                     db: Database)
-  extends SqlContext[I, N]
-    with MirrorEncoders
-    with WebSqlDecoders {
+abstract class WebSqlContext[I <: Idiom, N <: NamingStrategy](val idiom: I,
+                                                              val naming: N,
+                                                              db: Database)
+  extends SqlContext[I, N] {
 
-  override type PrepareRow = Row
-  override type ResultRow = Row
+  override type PrepareRow = List[js.Any]
+  override type ResultRow = WebSqlRow
 
   override type Result[T] = T
   override type RunQueryResult[T] = Future[Seq[T]]
@@ -50,13 +47,15 @@ class WebSqlContext[I <: Idiom, N <: NamingStrategy](val idiom: I,
                       prepare: Prepare,
                       extractor: Extractor[T])(implicit tx: Transaction): Future[List[T]] = {
     
-    val (_, values) = prepare(Row())
+    val (_, values) = prepare(Nil)
     
-    executeSql(sql, values.data).map { resultSet =>
+    executeSql(sql, values).map { resultSet =>
       resultSet.rows.map { row =>
         val obj = row.asInstanceOf[js.Dynamic]
-        val res = js.Object.keys(row).map(obj.selectDynamic)
-        extractor(Row(res: _*))
+        val res = js.Object.keys(row)
+          .map(k => obj.selectDynamic(k).asInstanceOf[js.Any])
+        
+        extractor(new WebSqlRow(res))
       }.toList
     }
   }
@@ -69,9 +68,9 @@ class WebSqlContext[I <: Idiom, N <: NamingStrategy](val idiom: I,
   }
 
   def executeAction(sql: String, prepare: Prepare)(implicit tx: Transaction): Future[Int] = {
-    val (_, values) = prepare(Row())
+    val (_, values) = prepare(Nil)
 
-    executeSql(sql, values.data).map(_.rowsAffected)
+    executeSql(sql, values).map(_.rowsAffected)
   }
 
   def executeActionReturning(sql: String,
@@ -80,9 +79,9 @@ class WebSqlContext[I <: Idiom, N <: NamingStrategy](val idiom: I,
                              returningColumn: String
                             )(implicit tx: Transaction): Future[Int] = {
     
-    val (_, values) = prepare(Row())
+    val (_, values) = prepare(Nil)
 
-    executeSql(sql, values.data).map(_.insertId.getOrElse(
+    executeSql(sql, values).map(_.insertId.getOrElse(
       throw new IllegalStateException(s"insertId is required, but wasn't returned: $sql")
     ))
   }
@@ -121,7 +120,7 @@ object WebSqlContext {
       .getOrElse(false)
   }
   
-  private def executeSql(sql: String, args: Seq[Any])(implicit tx: Transaction): Future[ResultSet] = {
+  private def executeSql(sql: String, args: Seq[js.Any])(implicit tx: Transaction): Future[ResultSet] = {
     val p = Promise[ResultSet]()
 
     if (isTransactionFinalized(tx)) p.failure(new IllegalStateException(
@@ -130,7 +129,7 @@ object WebSqlContext {
     else {
       tx.executeSql(
         sqlStatement = sql,
-        arguments = js.Array(args.map(_.asInstanceOf[js.Any]): _*),
+        arguments = args,
         success = { (_, resultSet) =>
           p.success(resultSet)
         },
