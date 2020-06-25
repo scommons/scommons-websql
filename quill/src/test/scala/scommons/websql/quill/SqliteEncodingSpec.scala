@@ -9,7 +9,7 @@ import scommons.websql.quill.dao.CommonDao
 import scommons.websql.{Transaction, WebSQL}
 import showcase.domain.ShowcaseDBContext
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.Future
 import scala.scalajs.js
 
 class SqliteEncodingSpec extends AsyncTestSpec {
@@ -64,8 +64,8 @@ class SqliteEncodingSpec extends AsyncTestSpec {
 
   it should "encode and decode all supported DB types" in {
     //given
-    val ctx = new ShowcaseDBContext(WebSQL.openDatabase(":memory:"))
-    val dao = new TestDao(ctx)
+    val db = WebSQL.openDatabase(":memory:")
+    val dao = new TestDao(new ShowcaseDBContext(db))
     val beforeCreate = {
       val now = new js.Date()
       val utcMillis = js.Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(),
@@ -74,14 +74,12 @@ class SqliteEncodingSpec extends AsyncTestSpec {
     }
 
     //when
-    val resultF = ctx.transaction { implicit tx =>
+    val resultF = dao.ctx.db.transaction { tx =>
       prepareDb(tx)
-      
-      val writeF = dao.insert(entity)
-      val readF = dao.getById(entity.id)
+    }.flatMap { _ =>
       for {
-        _ <- writeF
-        res <- readF
+        _ <- dao.insert(entity)
+        res <- dao.getById(entity.id)
       } yield res
     }
     
@@ -126,21 +124,21 @@ object SqliteEncodingSpec {
     val testEncodings = quote(querySchema[TestEntity]("test_encodings"))
   }
 
-  class TestDao(val ctx: ShowcaseDBContext)(implicit ex: ExecutionContext) extends CommonDao
+  class TestDao(val ctx: ShowcaseDBContext) extends CommonDao
     with TestSchema {
     
     import ctx._
 
-    def getById(id: Int)(implicit tx: Transaction): Future[Option[TestEntity]] = {
-      getOne("getById", ctx.run(testEncodings
+    def getById(id: Int): Future[Option[TestEntity]] = {
+      getOne("getById", ctx.performIO(ctx.run(testEncodings
         .filter(c => c.id == lift(id))
-      ))
+      )))
     }
 
-    def insert(entity: TestEntity)(implicit tx: Transaction): Future[Unit] = {
-      ctx.run(testEncodings
+    def insert(entity: TestEntity): Future[Unit] = {
+      ctx.performIO(ctx.run(testEncodings
         .insert(lift(entity))
-      ).map(_ => ())
+      ).map(_ => ()))
     }
   }
 }

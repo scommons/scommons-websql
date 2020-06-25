@@ -25,8 +25,8 @@ trait WebSQLTransaction extends js.Object {
 @js.native
 trait WebSQLResultSet extends js.Object {
 
-  val insertId: js.UndefOr[Int]
-  val rowsAffected: js.UndefOr[Int]
+  val insertId: js.UndefOr[Double]
+  val rowsAffected: js.UndefOr[Double]
   val rows: js.UndefOr[WebSQLRows]
 }
 

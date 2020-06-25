@@ -17,7 +17,7 @@ abstract class CommonDao {
     }
   }
 
-  def isUpdated(resultF: Future[Int]): Future[Boolean] = {
+  def isUpdated(resultF: Future[Long]): Future[Boolean] = {
     resultF.map(_ > 0)
   }
 }

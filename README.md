@@ -59,7 +59,7 @@ db.transaction { tx =>
       """CREATE TABLE IF NOT EXISTS categories (
         |  id              integer primary key,
         |  category_name   text NOT NULL,
-        |  created_at      timestamp without time zone DEFAULT current_timestamp,
+        |  created_at      timestamp NOT NULL DEFAULT (strftime('%s','now') * 1000),
         |  UNIQUE (category_name)
         |)
         |""".stripMargin
@@ -121,11 +121,9 @@ trait CategorySchema {
 [Example](quill/src/test/scala/showcase/domain/dao/CategoryDao.scala) DAO class with DB queries/actions:
 
 ```scala
-import scommons.websql.Transaction
 import scommons.websql.quill.dao.CommonDao
 import showcase.domain._
 
-import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
 class CategoryDao(val ctx: ShowcaseDBContext) extends CommonDao
@@ -133,28 +131,32 @@ class CategoryDao(val ctx: ShowcaseDBContext) extends CommonDao
 
   import ctx._
 
-  def getById(id: Int)(implicit tx: Transaction): Future[Option[CategoryEntity]] = {
-    getOne("getById", ctx.run(categories
+  def getByIdQuery(id: Int): IO[Seq[CategoryEntity], Effect.Read] = {
+    ctx.run(categories
       .filter(c => c.id == lift(id))
-    ))
+    )
   }
 
-  def count()(implicit tx: Transaction): Future[Int] = {
-    ctx.run(categories
+  def getById(id: Int): Future[Option[CategoryEntity]] = {
+    getOne("getById", ctx.performIO(getByIdQuery(id)))
+  }
+
+  def count(): Future[Int] = {
+    ctx.performIO(ctx.run(categories
       .size
-    ).map(_.toInt)
+    ).map(_.toInt))
   }
 
   def list(optOffset: Option[Int],
            limit: Int,
            symbols: Option[String]
-          )(implicit tx: Transaction): Future[(Seq[CategoryEntity], Option[Int])] = {
+          ): Future[(Seq[CategoryEntity], Option[Int])] = {
 
     val textLower = s"%${symbols.getOrElse("").trim.toLowerCase}%"
     val offset = optOffset.getOrElse(0)
 
     val countQuery = optOffset match {
-      case Some(_) => Future.successful(None)
+      case Some(_) => IO.successful(None)
       case None => ctx.run(categories
         .filter(c => c.categoryName.toLowerCase.like(lift(textLower)))
         .size
@@ -167,34 +169,61 @@ class CategoryDao(val ctx: ShowcaseDBContext) extends CommonDao
       .drop(lift(offset))
       .take(lift(limit))
     )
-    
-    // Important:
-    //   queries within transaction should be run outside for-comprehension
-    //
-    for {
+
+    val q = for {
       maybeCount <- countQuery
       results <- fetchQuery
     } yield {
       (results, maybeCount.map(_.toInt))
     }
+
+    // internally IO is always performed within transaction
+    // so, explicitly specifying transactional has no additional effect
+    //
+    ctx.performIO(q.transactional)
   }
 
-  def insert(entity: CategoryEntity)(implicit tx: Transaction): Future[Int] = {
+  def insertQuery(entity: CategoryEntity): IO[Int, Effect.Write] = {
     ctx.run(categories
       .insert(lift(entity))
       .returning(_.id)
-    )
+    ).map(_.toInt)
+  }
+  
+  def insert(entity: CategoryEntity): Future[Int] = {
+    ctx.performIO(insertQuery(entity))
   }
 
-  def update(entity: CategoryEntity)(implicit tx: Transaction): Future[Boolean] = {
-    isUpdated(ctx.run(categories
+  def upsert(entity: CategoryEntity): Future[CategoryEntity] = {
+    val q = for {
+      maybeCategory <- ctx.run(categories
+        .filter(c => c.categoryName == lift(entity.categoryName))
+      ).map(_.headOption)
+      id <- maybeCategory match {
+        case None => insertQuery(entity)
+        case Some(c) =>
+          updateQuery(entity.copy(id = c.id))
+            .map(_ => c.id)
+      }
+      res <- getByIdQuery(id).map(_.head)
+    } yield res
+    
+    ctx.performIO(q)
+  }
+
+  def updateQuery(entity: CategoryEntity): IO[Long, Effect.Write] = {
+    ctx.run(categories
       .filter(c => c.id == lift(entity.id))
       .update(lift(entity))
-    ))
+    )
+  }
+  
+  def update(entity: CategoryEntity): Future[Boolean] = {
+    isUpdated(ctx.performIO(updateQuery(entity)))
   }
 
-  def deleteAll()(implicit tx: Transaction): Future[Int] = {
-    ctx.run(categories.delete)
+  def deleteAll(): Future[Long] = {
+    ctx.performIO(ctx.run(categories.delete))
   }
 }
 ```
@@ -241,7 +270,7 @@ Done compiling.
 #### Running queries
 
 [Example](quill/src/test/scala/showcase/CategoryService.scala)
-business logic service/layer:
+business logic/service layer:
 
 ```scala
 import showcase.domain.CategoryEntity
@@ -252,25 +281,21 @@ import scala.concurrent.Future
 
 class CategoryService(dao: CategoryDao) {
 
-  import dao.ctx
-
   def getById(id: Int): Future[CategoryEntity] = {
-    ctx.transaction { implicit tx =>
-      dao.getById(id).map { maybeCat =>
-        maybeCat.getOrElse {
-          throw new IllegalArgumentException(s"Category is not found, categoryId: $id")
-        }
-      }
-    }
+    dao.getById(id).map(ensureCategory(id, _))
   }
   
   def add(entity: CategoryEntity): Future[CategoryEntity] = {
     for {
-      insertId <- ctx.transaction { implicit tx =>
-        dao.insert(entity)
-      } 
-      entity <- getById(insertId)
+      insertId <- dao.insert(entity)
+      entity <- dao.getById(insertId).map(ensureCategory(insertId, _))
     } yield entity
+  }
+  
+  private def ensureCategory(id: Int, maybeCat: Option[CategoryEntity]): CategoryEntity = {
+    maybeCat.getOrElse {
+      throw new IllegalArgumentException(s"Category is not found, categoryId: $id")
+    }
   }
 }
 ```

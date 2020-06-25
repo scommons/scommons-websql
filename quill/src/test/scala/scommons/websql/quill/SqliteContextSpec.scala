@@ -1,12 +1,13 @@
 package scommons.websql.quill
 
+import org.scalatest.Succeeded
 import scommons.nodejs.test.AsyncTestSpec
-import scommons.websql.{Transaction, WebSQL}
+import scommons.websql.{Database, Transaction, WebSQL}
 import showcase.domain.dao.CategoryDao
 import showcase.domain.{CategoryEntity, ShowcaseDBContext}
 
-import scala.concurrent.Future
-import scala.util.control.NonFatal
+import scala.scalajs.js
+import scala.util.Success
 
 class SqliteContextSpec extends AsyncTestSpec {
 
@@ -29,14 +30,37 @@ class SqliteContextSpec extends AsyncTestSpec {
     )
   }
   
+  it should "do nothing when close()" in {
+    //given
+    val ctx = new ShowcaseDBContext(mock[Database])
+    
+    //when
+    ctx.close()
+    
+    //then
+    Succeeded
+  }
+  
+  it should "do nothing when probe()" in {
+    //given
+    val ctx = new ShowcaseDBContext(mock[Database])
+    
+    //when
+    val result = ctx.probe("test")
+    
+    //then
+    result shouldBe Success(())
+  }
+  
   it should "return count of records" in {
     //given
-    val ctx = new ShowcaseDBContext(WebSQL.openDatabase(":memory:"))
-    val dao = new CategoryDao(ctx)
+    val db = WebSQL.openDatabase(":memory:")
+    val dao = new CategoryDao(new ShowcaseDBContext(db))
 
     //when
-    val result = ctx.transaction { implicit tx =>
+    val result = db.transaction { tx =>
       prepareDb(tx)
+    }.flatMap { _ =>
       dao.count()
     }
 
@@ -48,12 +72,13 @@ class SqliteContextSpec extends AsyncTestSpec {
   
   it should "return empty results" in {
     //given
-    val ctx = new ShowcaseDBContext(WebSQL.openDatabase(":memory:"))
-    val dao = new CategoryDao(ctx)
+    val db = WebSQL.openDatabase(":memory:")
+    val dao = new CategoryDao(new ShowcaseDBContext(db))
 
     //when
-    val result = ctx.transaction { implicit tx =>
+    val result = db.transaction { tx =>
       prepareDb(tx)
+    }.flatMap { _ =>
       dao.getById(123)
     }
 
@@ -65,12 +90,13 @@ class SqliteContextSpec extends AsyncTestSpec {
   
   it should "return non-empty results" in {
     //given
-    val ctx = new ShowcaseDBContext(WebSQL.openDatabase(":memory:"))
-    val dao = new CategoryDao(ctx)
+    val db = WebSQL.openDatabase(":memory:")
+    val dao = new CategoryDao(new ShowcaseDBContext(db))
 
     //when
-    val result = ctx.transaction { implicit tx =>
+    val result = db.transaction { tx =>
       prepareDb(tx)
+    }.flatMap { _ =>
       dao.list(Some(1), 10, Some("Test Category"))
     }
 
@@ -84,18 +110,19 @@ class SqliteContextSpec extends AsyncTestSpec {
     }
   }
   
-  it should "combine queries using Future.sequence" in {
+  it should "combine queries using IO.sequence" in {
     //given
-    val ctx = new ShowcaseDBContext(WebSQL.openDatabase(":memory:"))
-    val dao = new CategoryDao(ctx)
+    val db = WebSQL.openDatabase(":memory:")
+    val dao = new CategoryDao(new ShowcaseDBContext(db))
 
     //when
-    val result = ctx.transaction { implicit tx =>
+    val result = db.transaction { tx =>
       prepareDb(tx)
-      Future.sequence(Seq(
-        dao.getById(1),
-        dao.getById(2)
-      ))
+    }.flatMap { _ =>
+      dao.ctx.performIO(dao.ctx.IO.sequence(Seq(
+        dao.getByIdQuery(1).map(_.headOption),
+        dao.getByIdQuery(2).map(_.headOption)
+      )))
     }
 
     //then
@@ -109,20 +136,20 @@ class SqliteContextSpec extends AsyncTestSpec {
   
   it should "combine queries using for-comprehension" in {
     //given
-    val ctx = new ShowcaseDBContext(WebSQL.openDatabase(":memory:"))
-    val dao = new CategoryDao(ctx)
+    val db = WebSQL.openDatabase(":memory:")
+    val dao = new CategoryDao(new ShowcaseDBContext(db))
 
     //when
-    val result = ctx.transaction { implicit tx =>
+    val result = db.transaction { tx =>
       prepareDb(tx)
-      val res1Future = dao.getById(1)
-      val res2Future = dao.getById(2)
-      for {
-        res1 <- res1Future
-        res2 <- res2Future
+    }.flatMap { _ =>
+      val io = for {
+        res1 <- dao.getByIdQuery(1).map(_.headOption)
+        res2 <- dao.getByIdQuery(2).map(_.headOption)
       } yield {
         (res1, res2)
       }
+      dao.ctx.performIO(io)
     }
 
     //then
@@ -134,58 +161,31 @@ class SqliteContextSpec extends AsyncTestSpec {
     }
   }
   
-  it should "fail if queries are inside for-comprehension" in {
-    //given
-    val ctx = new ShowcaseDBContext(WebSQL.openDatabase(":memory:"))
-    val dao = new CategoryDao(ctx)
-
-    //when
-    val result = ctx.transaction { implicit tx =>
-      prepareDb(tx)
-      for {
-        res1 <- dao.getById(1)
-        res2 <- dao.getById(2)
-      } yield {
-        (res1, res2)
-      }
-    }
-
-    //then
-    result.failed.map {
-      case NonFatal(ex) =>
-        ex.getMessage shouldBe {
-          "Transaction is already finalized." +
-            " Use Future.sequence or run queries outside for-comprehension."
-        }
-    }
-  }
-  
   it should "update record" in {
     //given
-    val ctx = new ShowcaseDBContext(WebSQL.openDatabase(":memory:"))
-    val dao = new CategoryDao(ctx)
+    val db = WebSQL.openDatabase(":memory:")
+    val dao = new CategoryDao(new ShowcaseDBContext(db))
 
-    val beforeF = ctx.transaction { implicit tx =>
+    val beforeF = db.transaction { tx =>
       prepareDb(tx)
-      dao.list(None, 10, None)
-    }.map { before =>
-      before shouldBe {
-        (Seq(
-          CategoryEntity(1, "test category 1"),
-          CategoryEntity(2, "test category 2")
-        ), Some(2))
+    }.flatMap { _ =>
+      dao.list(None, 10, None).map { before =>
+        before shouldBe {
+          (Seq(
+            CategoryEntity(1, "test category 1"),
+            CategoryEntity(2, "test category 2")
+          ), Some(2))
+        }
+        before
       }
-      before
     }
 
     beforeF.flatMap { before =>
       //when
-      ctx.transaction { implicit tx =>
-        val updateF = dao.update(before._1.head.copy(categoryName = "updated category"))
-        val fetchF = dao.list(None, 10, None)
+      {
         for {
-          isUpdated <- updateF
-          results <- fetchF
+          isUpdated <- dao.update(before._1.head.copy(categoryName = "updated category"))
+          results <- dao.list(None, 10, None)
         } yield {
           (isUpdated, results)
         }
@@ -204,30 +204,29 @@ class SqliteContextSpec extends AsyncTestSpec {
   
   it should "insert record" in {
     //given
-    val ctx = new ShowcaseDBContext(WebSQL.openDatabase(":memory:"))
-    val dao = new CategoryDao(ctx)
+    val db = WebSQL.openDatabase(":memory:")
+    val dao = new CategoryDao(new ShowcaseDBContext(db))
 
-    val beforeF = ctx.transaction { implicit tx =>
+    val beforeF = db.transaction { tx =>
       prepareDb(tx)
-      dao.list(None, 10, None)
-    }.map { before =>
-      before shouldBe {
-        (Seq(
-          CategoryEntity(1, "test category 1"),
-          CategoryEntity(2, "test category 2")
-        ), Some(2))
+    }.flatMap { _ =>
+      dao.list(None, 10, None).map { before =>
+        before shouldBe {
+          (Seq(
+            CategoryEntity(1, "test category 1"),
+            CategoryEntity(2, "test category 2")
+          ), Some(2))
+        }
+        before
       }
-      before
     }
 
     beforeF.flatMap { _ =>
       //when
-      ctx.transaction { implicit tx =>
-        val insertF = dao.insert(CategoryEntity(-1, "new category"))
-        val fetchF = dao.list(None, 10, None)
+      {
         for {
-          insertId <- insertF
-          results <- fetchF
+          insertId <- dao.insert(CategoryEntity(-1, "new category"))
+          results <- dao.list(None, 10, None)
         } yield {
           (insertId, results)
         }
@@ -244,33 +243,117 @@ class SqliteContextSpec extends AsyncTestSpec {
       }
     }
   }
-  
-  it should "delete records" in {
-    //given
-    val ctx = new ShowcaseDBContext(WebSQL.openDatabase(":memory:"))
-    val dao = new CategoryDao(ctx)
 
-    val beforeF = ctx.transaction { implicit tx =>
+  it should "upsert existing record" in {
+    //given
+    val db = WebSQL.openDatabase(":memory:")
+    val dao = new CategoryDao(new ShowcaseDBContext(db))
+
+    val beforeF = db.transaction { tx =>
       prepareDb(tx)
-      dao.list(None, 10, None)
-    }.map { before =>
-      before shouldBe {
-        (Seq(
-          CategoryEntity(1, "test category 1"),
-          CategoryEntity(2, "test category 2")
-        ), Some(2))
+    }.flatMap { _ =>
+      dao.list(None, 10, None).map { before =>
+        before shouldBe {
+          (Seq(
+            CategoryEntity(1, "test category 1"),
+            CategoryEntity(2, "test category 2")
+          ), Some(2))
+        }
+        before
       }
-      before
+    }
+
+    beforeF.flatMap { before =>
+      //when
+      val entity = before._1.head
+      val result = for {
+        upserted <- dao.upsert(entity)
+        results <- dao.list(None, 10, None)
+      } yield {
+        (upserted, results)
+      }
+      
+      //then
+      result.map { case (upserted, results) =>
+        upserted shouldBe entity
+        results shouldBe {
+          (Seq(
+            CategoryEntity(1, "test category 1"),
+            CategoryEntity(2, "test category 2")
+          ), Some(2))
+        }
+      }
+    }
+  }
+
+  it should "upsert new record" in {
+    //given
+    val db = WebSQL.openDatabase(":memory:")
+    val dao = new CategoryDao(new ShowcaseDBContext(db))
+
+    val beforeF = db.transaction { tx =>
+      prepareDb(tx)
+    }.flatMap { _ =>
+      dao.list(None, 10, None).map { before =>
+        before shouldBe {
+          (Seq(
+            CategoryEntity(1, "test category 1"),
+            CategoryEntity(2, "test category 2")
+          ), Some(2))
+        }
+        before
+      }
     }
 
     beforeF.flatMap { _ =>
       //when
-      ctx.transaction { implicit tx =>
-        val deleteF = dao.deleteAll()
-        val fetchF = dao.list(None, 10, None)
+      val entity = CategoryEntity(-1, "new category")
+      val result = for {
+        upserted <- dao.upsert(entity)
+        results <- dao.list(None, 10, None)
+      } yield {
+        (upserted, results)
+      }
+        
+      //then
+      result.map { case (upserted, results) =>
+        upserted shouldBe entity.copy(id = 3)
+        results shouldBe {
+          (Seq(
+            CategoryEntity(3, "new category"),
+            CategoryEntity(1, "test category 1"),
+            CategoryEntity(2, "test category 2")
+          ), Some(3))
+        }
+      }
+    }
+  }
+  
+  it should "delete records" in {
+    //given
+    val db = WebSQL.openDatabase(":memory:")
+    val dao = new CategoryDao(new ShowcaseDBContext(db))
+
+    val beforeF = db.transaction { tx =>
+      prepareDb(tx)
+    }.flatMap { _ =>
+      dao.list(None, 10, None).map { before =>
+        before shouldBe {
+          (Seq(
+            CategoryEntity(1, "test category 1"),
+            CategoryEntity(2, "test category 2")
+          ), Some(2))
+        }
+        before
+      }
+    }
+
+    beforeF.flatMap { _ =>
+      //when
+      {
         for {
-          deleted <- deleteF
-          results <- fetchF
+          deleted <- dao.deleteAll()
+          results <- dao.list(None, 10, None)
         } yield {
           (deleted, results)
         }
@@ -286,32 +369,31 @@ class SqliteContextSpec extends AsyncTestSpec {
 
   it should "do batch update" in {
     //given
-    val ctx = new ShowcaseDBContext(WebSQL.openDatabase(":memory:"))
-    val dao = new CategoryDao(ctx)
+    val db = WebSQL.openDatabase(":memory:")
+    val dao = new CategoryDao(new ShowcaseDBContext(db))
 
-    val beforeF = ctx.transaction { implicit tx =>
+    val beforeF = db.transaction { tx =>
       prepareDb(tx)
-      dao.list(None, 10, None)
-    }.map { before =>
-      before shouldBe {
-        (Seq(
-          CategoryEntity(1, "test category 1"),
-          CategoryEntity(2, "test category 2")
-        ), Some(2))
+    }.flatMap { _ =>
+      dao.list(None, 10, None).map { before =>
+        before shouldBe {
+          (Seq(
+            CategoryEntity(1, "test category 1"),
+            CategoryEntity(2, "test category 2")
+          ), Some(2))
+        }
+        before
       }
-      before
     }
 
     beforeF.flatMap { before =>
       //when
-      ctx.transaction { implicit tx =>
-        val updateF = dao.updateMany(before._1.zipWithIndex.map { case (c, i) =>
-          c.copy(categoryName = s"updated category $i")
-        })
-        val fetchF = dao.list(None, 10, None)
+      {
         for {
-          updated <- updateF
-          results <- fetchF
+          updated <- dao.updateMany(before._1.zipWithIndex.map { case (c, i) =>
+            c.copy(categoryName = s"updated category $i")
+          })
+          results <- dao.list(None, 10, None)
         } yield {
           (updated, results)
         }
@@ -330,33 +412,32 @@ class SqliteContextSpec extends AsyncTestSpec {
 
   it should "do batch insert" in {
     //given
-    val ctx = new ShowcaseDBContext(WebSQL.openDatabase(":memory:"))
-    val dao = new CategoryDao(ctx)
+    val db = WebSQL.openDatabase(":memory:")
+    val dao = new CategoryDao(new ShowcaseDBContext(db))
 
-    val beforeF = ctx.transaction { implicit tx =>
+    val beforeF = db.transaction { tx =>
       prepareDb(tx)
-      dao.list(None, 10, None)
-    }.map { before =>
-      before shouldBe {
-        (Seq(
-          CategoryEntity(1, "test category 1"),
-          CategoryEntity(2, "test category 2")
-        ), Some(2))
+    }.flatMap { _ =>
+      dao.list(None, 10, None).map { before =>
+        before shouldBe {
+          (Seq(
+            CategoryEntity(1, "test category 1"),
+            CategoryEntity(2, "test category 2")
+          ), Some(2))
+        }
+        before
       }
-      before
     }
 
     beforeF.flatMap { _ =>
       //when
-      ctx.transaction { implicit tx =>
-        val insertF = dao.insertMany(Seq(
-          CategoryEntity(-1, "new category 1"),
-          CategoryEntity(-1, "new category 2")
-        ))
-        val fetchF = dao.list(None, 10, None)
+      {
         for {
-          insertIds <- insertF
-          results <- fetchF
+          insertIds <- dao.insertMany(Seq(
+            CategoryEntity(-1, "new category 1"),
+            CategoryEntity(-1, "new category 2")
+          ))
+          results <- dao.list(None, 10, None)
         } yield {
           (insertIds, results)
         }
@@ -375,39 +456,75 @@ class SqliteContextSpec extends AsyncTestSpec {
     }
   }
 
-  it should "rollback transaction" in {
+  it should "rollback transaction when SQL error" in {
     //given
-    val ctx = new ShowcaseDBContext(WebSQL.openDatabase(":memory:"))
-    val dao = new CategoryDao(ctx)
+    val db = WebSQL.openDatabase(":memory:")
+    val dao = new CategoryDao(new ShowcaseDBContext(db))
 
-    val beforeF = ctx.transaction { implicit tx =>
+    val beforeF = db.transaction { tx =>
       prepareDb(tx)
-      dao.list(None, 10, None)
-    }.map { before =>
-      before shouldBe {
-        (Seq(
-          CategoryEntity(1, "test category 1"),
-          CategoryEntity(2, "test category 2")
-        ), Some(2))
+    }.flatMap { _ =>
+      dao.list(None, 10, None).map { before =>
+        before shouldBe {
+          (Seq(
+            CategoryEntity(1, "test category 1"),
+            CategoryEntity(2, "test category 2")
+          ), Some(2))
+        }
+        before
       }
-      before
     }
 
     beforeF.flatMap { before =>
       //when
-      ctx.transaction { implicit tx =>
-        Future.sequence(Seq(
-          dao.insert(CategoryEntity(-1, "new category")),
-          dao.insert(before._1.head)
+      dao.ctx.performIO {
+        dao.ctx.IO.sequence(Seq(
+          dao.insertQuery(CategoryEntity(-1, "new category")),
+          dao.insertQuery(before._1.head)
         ))
       }.failed.flatMap { error =>
         //then
         error.getMessage shouldBe {
           "Error: SQLITE_CONSTRAINT: UNIQUE constraint failed: categories.category_name"
         }
-        ctx.transaction { implicit tx =>
-          dao.list(None, 10, None)
-        }.map { after =>
+        dao.list(None, 10, None).map { after =>
+          after shouldBe before
+        }
+      }
+    }
+  }
+  
+  ignore should "rollback transaction manually by throwing error" in {
+    //given
+    val db = WebSQL.openDatabase(":memory:")
+    val dao = new CategoryDao(new ShowcaseDBContext(db))
+
+    val beforeF = db.transaction { tx =>
+      prepareDb(tx)
+    }.flatMap { _ =>
+      dao.list(None, 10, None).map { before =>
+        before shouldBe {
+          (Seq(
+            CategoryEntity(1, "test category 1"),
+            CategoryEntity(2, "test category 2")
+          ), Some(2))
+        }
+        before
+      }
+    }
+
+    beforeF.flatMap { before =>
+      //when
+      dao.ctx.performIO {
+        for {
+          _ <- dao.insertQuery(CategoryEntity(-1, "new category"))
+        } yield {
+          throw js.JavaScriptException(js.Error("test error"))
+        }
+      }.failed.flatMap { error =>
+        //then
+        error.getMessage shouldBe "test error"
+        dao.list(None, 10, None).map { after =>
           after shouldBe before
         }
       }
