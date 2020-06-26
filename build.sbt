@@ -16,8 +16,10 @@ lazy val `scommons-websql` = (project in file("."))
   )
   .aggregate(
   `scommons-websql-core`,
+  `scommons-websql-migrations`,
   `scommons-websql-quill`
 )
 
 lazy val `scommons-websql-core` = WebSqlCore.definition
+lazy val `scommons-websql-migrations` = WebSqlMigrations.definition
 lazy val `scommons-websql-quill` = WebSqlQuill.definition

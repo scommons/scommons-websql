@@ -21,6 +21,7 @@ val scommonsWebSqlVer = "1.0.0-SNAPSHOT"
 
 libraryDependencies ++= Seq(
   "org.scommons.websql" %%% "scommons-websql-core" % scommonsWebSqlVer,
+  "org.scommons.websql" %%% "scommons-websql-migrations" % scommonsWebSqlVer,
   "org.scommons.websql" %%% "scommons-websql-quill" % scommonsWebSqlVer
 )
 ```
