@@ -17,7 +17,7 @@ object WebSqlQuill extends ScalaJsModule {
       description := "quill bindings for WebSQL/SQLite Api",
 
       npmDependencies in Test ++= Seq(
-        "websql" -> "1.0.0"
+        TestLibs.websql
       )
     )
 

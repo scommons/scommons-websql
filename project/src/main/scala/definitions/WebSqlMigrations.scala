@@ -17,7 +17,7 @@ object WebSqlMigrations extends ScalaJsModule {
       description := "Easy DB migrations for WebSQL/SQLite Api",
 
       npmDependencies in Test ++= Seq(
-        "websql" -> "1.0.0"
+        TestLibs.websql
       )
     )
 

@@ -7,6 +7,8 @@ import scala.scalajs.js
   */
 @js.native
 trait WebSQLDatabase extends js.Object {
+  
+  val _db: WebSQLInternalDB = js.native
 
   def transaction(callback: js.Function1[WebSQLTransaction, Unit],
                   error: js.Function1[js.Error, Unit],
