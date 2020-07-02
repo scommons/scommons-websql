@@ -1,11 +1,10 @@
 package scommons.websql.migrations
 
-import org.scalatest.Assertion
+import org.scalatest.{Assertion, Succeeded}
 import scommons.nodejs.test.AsyncTestSpec
 import scommons.websql.{Database, WebSQL}
 
 import scala.concurrent.Future
-import scala.scalajs.js
 
 class WebSqlMigrationsSpec extends AsyncTestSpec {
   
@@ -159,6 +158,11 @@ class WebSqlMigrationsSpec extends AsyncTestSpec {
       migration1,
       migration2.copy(
         sql = s"${migration2.sql}; insert into test_migrations (new_name) values ('test 5'), ();"
+      ),
+      WebSqlMigration(
+        version = 3,
+        name = "test migration 3",
+        sql = "insert into test_migrations (new_name) values ('test 7');"
       )
     )
 
@@ -225,19 +229,92 @@ class WebSqlMigrationsSpec extends AsyncTestSpec {
     }
   }
 
+  it should "run non-transactional migration" in {
+    //given
+    val loggerMock = mockFunction[String, Unit]
+    val db = WebSQL.openDatabase(":memory:")
+    val migrations = new WebSqlMigrations(db) {
+      override val logger = loggerMock
+    }
+    loggerMock.expects("DB: applying 1 non-transactional migration")
+    loggerMock.expects("DB: 1 migration(s) were applied successfully")
+
+    val all = Seq(WebSqlMigration(
+      version = 1,
+      name = "non-transactional migration",
+      sql =
+        """-- non-transactional
+          |PRAGMA foreign_keys = ON;
+          |""".stripMargin
+    ))
+
+    //when
+    val resultF = migrations.run(all)
+
+    //then
+    resultF.map { _ =>
+      Succeeded
+    }
+  }
+
+  it should "run non-transactional and transactional migrations" in {
+    //given
+    val loggerMock = mockFunction[String, Unit]
+    val db = WebSQL.openDatabase(":memory:")
+    val migrations = new WebSqlMigrations(db) {
+      override val logger = loggerMock
+    }
+    loggerMock.expects("DB: applying 1 non-transactional migration")
+    loggerMock.expects("DB: applying 2 transactional migration")
+    loggerMock.expects("DB: Error: SQLITE_CONSTRAINT: FOREIGN KEY constraint failed")
+
+    val all = Seq(
+      WebSqlMigration(1, "non-transactional migration",
+        """
+          |-- non-transactional
+          |PRAGMA foreign_keys = ON;
+          |
+          |create table categories (
+          |  id     integer primary key,
+          |  name   text
+          |);
+          |
+          |create table products (
+          |  id     integer primary key,
+          |  cat_id integer not null,
+          |  name   text,
+          |  CONSTRAINT category_fk FOREIGN KEY (cat_id) REFERENCES categories (id)
+          |);
+          |""".stripMargin
+      ),
+      WebSqlMigration(2, "transactional migration",
+        """
+          |insert into categories (name) values ('category 1'), ('category 2');
+          |insert into products (cat_id, name) values (3, 'product 1')
+          |""".stripMargin
+      )
+    )
+
+    //when
+    val resultF = migrations.run(all)
+
+    //then
+    resultF.failed.map { ex =>
+      ex.getMessage shouldBe "Error: SQLITE_CONSTRAINT: FOREIGN KEY constraint failed"
+    }
+  }
+
   private def assertDb(db: Database, expected: Seq[(Int, String)]): Future[Assertion] = {
     var results: Seq[(Int, String)] = Nil
     db.transaction { tx =>
       tx.executeSql(
         sqlStatement = "select * from test_migrations order by id",
-        arguments = Nil,
         success = { (_, resultSet) =>
           results = resultSet.rows.map { row =>
-            val r = row.asInstanceOf[js.Dynamic]
-            (r.id.asInstanceOf[Int], r.new_name.asInstanceOf[String])
+            (row.id.asInstanceOf[Int],
+              row.new_name.asInstanceOf[String])
           }
-        },
-        error = null
+        }
       )
     }.map { _ =>
       results shouldBe expected

@@ -102,9 +102,8 @@ abstract class WebSqlContext[I <: Idiom, N <: NamingStrategy](val idiom: I,
       val result = cmd match {
         case ExecQuery(_, _, extractor) =>
           resultSet.rows.map { row =>
-            val obj = row.asInstanceOf[js.Dynamic]
-            val res = js.Object.keys(row)
-              .map(k => obj.selectDynamic(k).asInstanceOf[js.Any])
+            val res = js.Object.keys(row.asInstanceOf[js.Object])
+              .map(k => row.selectDynamic(k).asInstanceOf[js.Any])
 
             extractor(new WebSqlRow(res))
           }.toList

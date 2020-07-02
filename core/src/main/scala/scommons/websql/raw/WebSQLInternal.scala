@@ -26,5 +26,5 @@ trait WebSQLInternalResult extends js.Object {
   val error: js.UndefOr[js.Error]
   val insertId: js.UndefOr[Double]
   val rowsAffected: js.UndefOr[Double]
-  val rows: js.UndefOr[js.Array[js.Object]]
+  val rows: js.UndefOr[js.Array[js.Dynamic]]
 }

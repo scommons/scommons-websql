@@ -35,5 +35,5 @@ trait WebSQLResultSet extends js.Object {
 @js.native
 trait WebSQLRows extends js.Object {
 
-  val _array: js.Array[js.Object]
+  val _array: js.Array[js.Dynamic]
 }

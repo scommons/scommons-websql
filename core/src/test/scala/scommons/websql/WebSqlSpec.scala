@@ -97,15 +97,15 @@ class WebSqlSpec extends AsyncTestSpec {
         result.error.getOrElse(null) shouldBe null
         result.insertId.getOrElse(0.0) shouldBe 2
         result.rowsAffected.getOrElse(0.0) shouldBe 2
-        result.rows.getOrElse(js.Array[js.Object]()).toSeq shouldBe Nil
+        result.rows.getOrElse(js.Array[js.Dynamic]()).toSeq shouldBe Nil
       }
       inside(results(1)) { case result =>
         result.error.getOrElse(null) shouldBe null
         result.insertId.getOrElse(0.0) shouldBe 0.0
         result.rowsAffected.getOrElse(0.0) shouldBe 0.0
-        result.rows.getOrElse(js.Array[js.Object]()).toSeq.map { row =>
-          val r = row.asInstanceOf[js.Dynamic]
-          (r.id.asInstanceOf[Int], r.name.asInstanceOf[String])
+        result.rows.getOrElse(js.Array[js.Dynamic]()).toSeq.map { row =>
+          (row.id.asInstanceOf[Int],
+            row.name.asInstanceOf[String])
         } shouldBe Seq(
           (1, "category 1")
         )
@@ -115,14 +115,12 @@ class WebSqlSpec extends AsyncTestSpec {
       db.transaction { tx =>
         tx.executeSql(
           sqlStatement = "select * from categories order by id",
-          arguments = Nil,
           success = { (_, resultSet) =>
             categories = resultSet.rows.map { row =>
-              val r = row.asInstanceOf[js.Dynamic]
-              (r.id.asInstanceOf[Int], r.name.asInstanceOf[String])
+              (row.id.asInstanceOf[Int],
+                row.name.asInstanceOf[String])
             }
-          },
-          error = null
+          }
         )
       }.map { _ =>
         categories shouldBe Seq(
@@ -162,7 +160,7 @@ class WebSqlSpec extends AsyncTestSpec {
         result.error.getOrElse(null) shouldBe null
         result.insertId.getOrElse(0.0) shouldBe 2
         result.rowsAffected.getOrElse(0.0) shouldBe 2
-        result.rows.getOrElse(js.Array[js.Object]()).toSeq shouldBe Nil
+        result.rows.getOrElse(js.Array[js.Dynamic]()).toSeq shouldBe Nil
       }
       
       db.transaction { tx =>

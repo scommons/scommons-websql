@@ -6,18 +6,10 @@ import scala.scalajs.js
 
 class Transaction(underlying: WebSQLTransaction) {
 
-  def executeSql(sqlStatement: String): Unit = {
-    executeSql(sqlStatement, Nil)
-  }
-  
-  def executeSql(sqlStatement: String, arguments: Seq[js.Any]): Unit = {
-    executeSql(sqlStatement, arguments, null, null)
-  }
-  
   def executeSql(sqlStatement: String,
-                 arguments: Seq[js.Any],
-                 success: (Transaction, ResultSet) => Unit,
-                 error: (Transaction, js.Error) => Boolean): Unit = {
+                 arguments: Seq[js.Any] = Nil,
+                 success: (Transaction, ResultSet) => Unit = null,
+                 error: (Transaction, js.Error) => Boolean = null): Unit = {
 
     val successFn: js.Function2[WebSQLTransaction, WebSQLResultSet, Unit] =
       if (success == null) null
