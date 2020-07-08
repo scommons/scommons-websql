@@ -3,6 +3,8 @@ package definitions
 import common.TestLibs
 import sbt.Keys._
 import sbt._
+import scommons.sbtplugin.ScommonsPlugin.autoImport._
+import scoverage.ScoverageKeys.coverageExcludedPackages
 
 import scalajsbundler.sbtplugin.ScalaJSBundlerPlugin.autoImport._
 
@@ -15,6 +17,9 @@ object WebSqlMigrations extends ScalaJsModule {
   override def definition: Project = super.definition
     .settings(
       description := "Easy DB migrations for WebSQL/SQLite Api",
+      coverageExcludedPackages := "scommons.websql.migrations.raw",
+
+      scommonsBundlesFileFilter := "*.sql",
 
       npmDependencies in Test ++= Seq(
         TestLibs.websql

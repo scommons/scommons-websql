@@ -2,9 +2,13 @@ package scommons.websql.migrations
 
 import org.scalatest.{Assertion, Succeeded}
 import scommons.nodejs.test.AsyncTestSpec
+import scommons.websql.migrations.WebSqlMigrationsSpec._
+import scommons.websql.migrations.raw.WebSqlMigrationBundleItem
 import scommons.websql.{Database, WebSQL}
 
 import scala.concurrent.Future
+import scala.scalajs.js
+import scala.scalajs.js.annotation.JSExportAll
 
 class WebSqlMigrationsSpec extends AsyncTestSpec {
   
@@ -42,8 +46,8 @@ class WebSqlMigrationsSpec extends AsyncTestSpec {
     val migrations = new WebSqlMigrations(db) {
       override val logger = loggerMock
     }
-    loggerMock.expects("DB: applying 1 test migration 1")
-    loggerMock.expects("DB: applying 2 test migration 2")
+    loggerMock.expects("DB: migrating to version 1 - test migration 1")
+    loggerMock.expects("DB: migrating to version 2 - test migration 2")
     loggerMock.expects("DB: 2 migration(s) were applied successfully")
     
     val all = Seq(
@@ -72,8 +76,8 @@ class WebSqlMigrationsSpec extends AsyncTestSpec {
     val migrations = new WebSqlMigrations(db) {
       override val logger = loggerMock
     }
-    loggerMock.expects("DB: applying 1 test migration 1")
-    loggerMock.expects("DB: applying 2 test migration 2")
+    loggerMock.expects("DB: migrating to version 1 - test migration 1")
+    loggerMock.expects("DB: migrating to version 2 - test migration 2")
     loggerMock.expects("DB: 1 migration(s) were applied successfully")
     loggerMock.expects("DB: 1 migration(s) were applied successfully")
     
@@ -113,7 +117,7 @@ class WebSqlMigrationsSpec extends AsyncTestSpec {
     val migrations = new WebSqlMigrations(db) {
       override val logger = loggerMock
     }
-    loggerMock.expects("DB: applying 1 test migration 1")
+    loggerMock.expects("DB: migrating to version 1 - test migration 1")
     loggerMock.expects("DB: 1 migration(s) were applied successfully")
     loggerMock.expects("DB is up to date")
     
@@ -148,8 +152,8 @@ class WebSqlMigrationsSpec extends AsyncTestSpec {
     val migrations = new WebSqlMigrations(db) {
       override val logger = loggerMock
     }
-    loggerMock.expects("DB: applying 1 test migration 1")
-    loggerMock.expects("DB: applying 2 test migration 2")
+    loggerMock.expects("DB: migrating to version 1 - test migration 1")
+    loggerMock.expects("DB: migrating to version 2 - test migration 2")
     loggerMock.expects(
       """DB: Error: SQLITE_ERROR: near ")": syntax error"""
     )
@@ -187,12 +191,12 @@ class WebSqlMigrationsSpec extends AsyncTestSpec {
     val migrations = new WebSqlMigrations(db) {
       override val logger = loggerMock
     }
-    loggerMock.expects("DB: applying 1 test migration 1")
-    loggerMock.expects("DB: applying 2 test migration 2")
+    loggerMock.expects("DB: migrating to version 1 - test migration 1")
+    loggerMock.expects("DB: migrating to version 2 - test migration 2")
     loggerMock.expects(
       """DB: Error: SQLITE_ERROR: near ")": syntax error"""
     )
-    loggerMock.expects("DB: applying 2 test migration 2")
+    loggerMock.expects("DB: migrating to version 2 - test migration 2")
     loggerMock.expects("DB: 1 migration(s) were applied successfully")
     
     val beforeF = migrations.run(Seq(
@@ -236,7 +240,7 @@ class WebSqlMigrationsSpec extends AsyncTestSpec {
     val migrations = new WebSqlMigrations(db) {
       override val logger = loggerMock
     }
-    loggerMock.expects("DB: applying 1 non-transactional migration")
+    loggerMock.expects("DB: migrating to version 1 - non-transactional migration")
     loggerMock.expects("DB: 1 migration(s) were applied successfully")
 
     val all = Seq(WebSqlMigration(
@@ -264,8 +268,8 @@ class WebSqlMigrationsSpec extends AsyncTestSpec {
     val migrations = new WebSqlMigrations(db) {
       override val logger = loggerMock
     }
-    loggerMock.expects("DB: applying 1 non-transactional migration")
-    loggerMock.expects("DB: applying 2 transactional migration")
+    loggerMock.expects("DB: migrating to version 1 - non-transactional migration")
+    loggerMock.expects("DB: migrating to version 2 - transactional migration")
     loggerMock.expects("DB: Error: SQLITE_CONSTRAINT: FOREIGN KEY constraint failed")
 
     val all = Seq(
@@ -303,6 +307,56 @@ class WebSqlMigrationsSpec extends AsyncTestSpec {
       ex.getMessage shouldBe "Error: SQLITE_CONSTRAINT: FOREIGN KEY constraint failed"
     }
   }
+  
+  it should "run migrations from bundle.json" in {
+    //given
+    val loggerMock = mockFunction[String, Unit]
+    val db = WebSQL.openDatabase(":memory:")
+    val migrations = new WebSqlMigrations(db) {
+      override val logger = loggerMock
+    }
+    loggerMock.expects("DB: migrating to version 1 - initial db structure")
+    loggerMock.expects("DB: migrating to version 2 - rename db field")
+    loggerMock.expects("DB: 2 migration(s) were applied successfully")
+
+    val bundle = TestMigrationsBundle
+
+    //when
+    val resultF = migrations.runBundle(bundle)
+
+    //then
+    resultF.flatMap { _ =>
+      assertDb(db, Seq(
+        (1, "test 1"),
+        (2, "test 2")
+      ))
+    }
+  }
+
+  it should "fail if cannot parse migration version and name" in {
+    //given
+    val itemMock = mock[WebSqlMigrationBundleItemMock]
+    val loggerMock = mockFunction[String, Unit]
+    val migrations = new WebSqlMigrations(null) {
+      override val logger = loggerMock
+    }
+    val fileName = "V01_test.SQL"
+    val error = s"Cannot parse migration version and name from: $fileName"
+
+    (itemMock.file _).expects().returning(fileName)
+    loggerMock.expects(s"DB: Error: $error")
+
+    val bundle = js.Array(itemMock.asInstanceOf[WebSqlMigrationBundleItem])
+      .asInstanceOf[WebSqlMigrationBundle]
+
+    //when
+    val resultF = migrations.runBundle(bundle)
+
+    //then
+    resultF.failed.map { ex =>
+      ex.getMessage shouldBe error
+    }
+  }
 
   private def assertDb(db: Database, expected: Seq[(Int, String)]): Future[Assertion] = {
     var results: Seq[(Int, String)] = Nil
@@ -319,5 +373,15 @@ class WebSqlMigrationsSpec extends AsyncTestSpec {
     }.map { _ =>
       results shouldBe expected
     }
+  }
+}
+
+object WebSqlMigrationsSpec {
+
+  @JSExportAll
+  trait WebSqlMigrationBundleItemMock {
+    
+    def file: String
+    def content: String
   }
 }

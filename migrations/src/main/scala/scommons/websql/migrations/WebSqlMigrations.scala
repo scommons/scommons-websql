@@ -7,11 +7,37 @@ import scommons.websql.{Database, Transaction}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.scalajs.js
+import scala.util.control.NonFatal
 
 class WebSqlMigrations(db: Database) {
   
   private[migrations] val logger: String => Unit = println
 
+  def runBundle(bundle: WebSqlMigrationBundle): Future[Unit] = {
+    
+    def parseVersionAndName(fileName: String): (Int, String) = {
+      fileName match {
+        case versionAndNameRegex(version, name) => (version.toInt, name.replace('_', ' '))
+        case _ =>
+          throw new IllegalArgumentException(
+            s"Cannot parse migration version and name from: $fileName"
+          )
+      }
+    }
+
+    try {
+      run(bundle.map { item =>
+        val (version, name) = parseVersionAndName(item.file)
+        WebSqlMigration(version, name, item.content)
+      })
+    }
+    catch {
+      case NonFatal(ex) =>
+        logger(s"DB: Error: ${ex.getMessage}")
+        Future.failed(ex)
+    }
+  }
+  
   def run(all: Seq[WebSqlMigration]): Future[Unit] = {
     var count = 0
     for {
@@ -62,7 +88,7 @@ class WebSqlMigrations(db: Database) {
     
     db.transaction { tx =>
       checkVersion(tx, m, { () =>
-        logger(s"DB: applying ${m.version} ${m.name}")
+        logger(s"DB: migrating to version ${m.version} - ${m.name}")
         
         statements.foreach { statement =>
           tx.executeSql(statement)
@@ -117,4 +143,6 @@ class WebSqlMigrations(db: Database) {
 object WebSqlMigrations {
 
   private val dbTable = "schema_versions"
+  
+  private val versionAndNameRegex = """V(\d+)__(.+).sql""".r
 }

@@ -76,6 +76,47 @@ db.transaction { tx =>
 }
 ```
 
+#### Setup DB migrations
+
+To automate DB schema versioning you can use `scommons-websql-migrations`
+library together with `sbt-scommons-plugin`.
+
+First, set the `scommonsBundlesFileFilter` `sbt` build setting:
+```sbt
+import scommons.sbtplugin.ScommonsPlugin.autoImport._
+
+...
+scommonsBundlesFileFilter := "*.sql"
+...
+```
+
+Then add your `SQL` migrations scripts:
+* [V001__initial_db_structure.sql](migrations/src/test/resources/scommons/websql/migrations/V001__initial_db_structure.sql)
+* [V002__rename_db_field.sql](migrations/src/test/resources/scommons/websql/migrations/V002__rename_db_field.sql)
+
+This setup will automatically generate single `bundle.json` file
+during the build with the all SQL scripts content inside.
+
+Then you can read this file from the code:
+```scala
+import scala.scalajs.js
+import scala.scalajs.js.annotation.JSImport
+import scommons.websql.migrations.WebSqlMigrationBundle
+
+@js.native
+@JSImport("./scommons/websql/migrations/bundle.json", JSImport.Namespace)
+object TestMigrationsBundle extends WebSqlMigrationBundle
+```
+
+And run migrations at the start of your app:
+```scala
+import scommons.websql.migrations.WebSqlMigrations
+
+val migrations = new WebSqlMigrations(db)
+
+migrations.runBundle(TestMigrationsBundle)
+```
+
 #### Create quill DB Context
 
 To use [quill](https://getquill.io) bindings include `scommons-websql-quill`
