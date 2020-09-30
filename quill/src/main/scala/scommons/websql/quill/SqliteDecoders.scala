@@ -29,9 +29,7 @@ trait SqliteDecoders {
     SqliteDecoder { (index: Index, row: ResultRow) =>
       val v = row.data(index)
       if (v == null || js.isUndefined(v)) None
-      else {
-        Some(d(0, new WebSqlRow(js.Array(v))))
-      }
+      else Some(d.apply(index, row))
     }
 
   implicit val doubleToBoolean: MappedEncoding[Double, Boolean] = MappedEncoding(_ != 0.0)

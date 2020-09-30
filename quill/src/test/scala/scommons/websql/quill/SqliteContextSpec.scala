@@ -3,8 +3,8 @@ package scommons.websql.quill
 import org.scalatest.Succeeded
 import scommons.nodejs.test.AsyncTestSpec
 import scommons.websql.{Database, Transaction, WebSQL}
-import showcase.domain.dao.CategoryDao
-import showcase.domain.{CategoryEntity, ShowcaseDBContext}
+import showcase.domain.dao.{CategoryDao, ProductDao}
+import showcase.domain.{CategoryEntity, ProductEntity, ShowcaseDBContext}
 
 import scala.scalajs.js
 import scala.util.Success
@@ -22,10 +22,27 @@ class SqliteContextSpec extends AsyncTestSpec {
         |""".stripMargin
     )
     tx.executeSql(
+      """create table products (
+        |  id              integer primary key,
+        |  name            text not null,
+        |  category_id     integer,
+        |  UNIQUE (name)
+        |)
+        |""".stripMargin
+    )
+    tx.executeSql(
       "insert into categories (category_name) values (?), (?)",
       Seq(
         "test category 1",
         "test category 2"
+      )
+    )
+    tx.executeSql(
+      "insert into products (name, category_id) values (?, ?), (?, ?), (?, ?)",
+      Seq(
+        "test product 0", null,
+        "test product 1.1", 1,
+        "test product 1.2", 1
       )
     )
   }
@@ -452,6 +469,55 @@ class SqliteContextSpec extends AsyncTestSpec {
             CategoryEntity(2, "test category 2")
           ), Some(4))
         }
+      }
+    }
+  }
+
+  it should "execute join query" in {
+    //given
+    val db = WebSQL.openDatabase(":memory:")
+    val productDao = new ProductDao(new ShowcaseDBContext(db))
+    val beforeF = db.transaction { tx =>
+      prepareDb(tx)
+    }.flatMap { _ =>
+      productDao.allProducts()
+    }
+
+    beforeF.flatMap { products =>
+      products shouldBe Seq(
+        ProductEntity(1, "test product 0", None),
+        ProductEntity(2, "test product 1.1", Some(1)),
+        ProductEntity(3, "test product 1.2", Some(1))
+      )
+
+      //when
+      productDao.joinProducts().map { results =>
+        //then
+        results shouldBe Seq(
+          (ProductEntity(2, "test product 1.1", Some(1)), CategoryEntity(1, "test category 1")),
+          (ProductEntity(3, "test product 1.2", Some(1)), CategoryEntity(1, "test category 1"))
+        )
+      }
+    }
+  }
+
+  it should "execute leftJoin query" in {
+    //given
+    val db = WebSQL.openDatabase(":memory:")
+    val productDao = new ProductDao(new ShowcaseDBContext(db))
+    val beforeF = db.transaction { tx =>
+      prepareDb(tx)
+    }
+
+    beforeF.flatMap { _ =>
+      //when
+      productDao.leftJoinProducts().map { results =>
+        //then
+        results shouldBe Seq(
+          (ProductEntity(1, "test product 0", None), None),
+          (ProductEntity(2, "test product 1.1", Some(1)), Some(CategoryEntity(1, "test category 1"))),
+          (ProductEntity(3, "test product 1.2", Some(1)), Some(CategoryEntity(1, "test category 1")))
+        )
       }
     }
   }
