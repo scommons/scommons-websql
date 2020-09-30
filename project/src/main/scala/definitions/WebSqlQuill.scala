@@ -3,6 +3,7 @@ package definitions
 import common.{Libs, TestLibs}
 import sbt.Keys._
 import sbt._
+import scoverage.ScoverageKeys.coverageExcludedPackages
 
 import scalajsbundler.sbtplugin.ScalaJSBundlerPlugin.autoImport._
 
@@ -15,6 +16,8 @@ object WebSqlQuill extends ScalaJsModule {
   override def definition: Project = super.definition
     .settings(
       description := "quill bindings for WebSQL/SQLite Api",
+      
+      coverageExcludedPackages := "scommons.websql.quill.WebSqlDialect",
 
       npmDependencies in Test ++= Seq(
         TestLibs.websql
