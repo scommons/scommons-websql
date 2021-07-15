@@ -65,7 +65,7 @@ class CategoryDao(val ctx: ShowcaseDBContext) extends CommonDao
   def insertQuery(entity: CategoryEntity): IO[Int, Effect.Write] = {
     ctx.run(categories
       .insert(lift(entity))
-      .returning(_.id)
+      .returningGenerated(_.id)
     ).map(_.toInt)
   }
   
@@ -78,7 +78,7 @@ class CategoryDao(val ctx: ShowcaseDBContext) extends CommonDao
       liftQuery(list).foreach { entity =>
         categories
           .insert(entity)
-          .returning(_.id)
+          .returningGenerated(_.id)
       }
     }
 

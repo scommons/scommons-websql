@@ -61,7 +61,7 @@ abstract class WebSqlContext[I <: Idiom, N <: NamingStrategy](val idiom: I,
 
   def executeActionReturning(sql: String, prepare: Prepare,
                              extractor: Extractor[Int],
-                             returningColumn: String): IO[Long, Effect.Write] = {
+                             returningColumn: ReturnAction): IO[Long, Effect.Write] = {
     
     val (_, values) = prepare(Nil)
     Run(ExecActionReturning(sql, values))
@@ -100,12 +100,12 @@ abstract class WebSqlContext[I <: Idiom, N <: NamingStrategy](val idiom: I,
     
     def extractResult[R](cmd: SqlCommand[R], resultSet: ResultSet): R = {
       val result = cmd match {
-        case ExecQuery(_, _, extractor) =>
+        case q: ExecQuery[_] =>
           resultSet.rows.map { row =>
             val res = js.Object.keys(row.asInstanceOf[js.Object])
               .map(k => row.selectDynamic(k).asInstanceOf[js.Any])
 
-            extractor(new WebSqlRow(res))
+            q.extractor(new WebSqlRow(res))
           }.toList
         case ExecAction(_, _) => resultSet.rowsAffected
         case ExecActionReturning(sql, _) => resultSet.insertId.getOrElse(
@@ -137,7 +137,7 @@ abstract class WebSqlContext[I <: Idiom, N <: NamingStrategy](val idiom: I,
             },
             error = null // don't know how to handle errors/rollback on this level
           )
-        case seq @ Sequence(_, _, _) => loop(flatten(seq), stack)
+        case seq @ Sequence(_, _) => loop(flatten(seq), stack)
         case TransformWith(a, fA) => loop(a, fA.asInstanceOf[Try[_] => IO[_, _]] :: stack)
         case Transactional(t) => loop(t, stack)
       }
