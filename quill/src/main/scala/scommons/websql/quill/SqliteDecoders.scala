@@ -3,6 +3,7 @@ package scommons.websql.quill
 import java.time.LocalDate
 import java.util.{Date, UUID}
 
+import scala.collection.immutable.ArraySeq
 import scala.reflect.ClassTag
 import scala.scalajs.js
 import scala.scalajs.js.typedarray.Int8Array
@@ -41,7 +42,9 @@ trait SqliteDecoders {
   implicit val doubleToFloat: MappedEncoding[Double, Float] = MappedEncoding(_.toFloat)
   implicit val stringToUUID: MappedEncoding[String, UUID] = MappedEncoding(UUID.fromString)
   implicit val int8ArrayToByteArray: MappedEncoding[Int8Array, Array[Byte]] = MappedEncoding(_.toArray)
-  implicit val int8ArrayToByteSeq: MappedEncoding[Int8Array, Seq[Byte]] = MappedEncoding(_.toArray)
+  implicit val int8ArrayToByteSeq: MappedEncoding[Int8Array, Seq[Byte]] = MappedEncoding { in =>
+    ArraySeq.unsafeWrapArray(in.toArray)
+  }
   implicit val jsDateToDate: MappedEncoding[js.Date, Date] = MappedEncoding(d => new Date(d.getTime().toLong))
   implicit val jsDateToLocalDate: MappedEncoding[js.Date, LocalDate] = MappedEncoding(d =>
     LocalDate.of(d.getFullYear, d.getMonth + 1, d.getDate)

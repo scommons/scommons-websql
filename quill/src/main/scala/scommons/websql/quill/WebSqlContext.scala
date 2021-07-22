@@ -9,7 +9,6 @@ import scommons.websql.{Database, ResultSet, Transaction}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-import scala.language.higherKinds
 import scala.scalajs.js
 import scala.util.{Success, Try}
 
@@ -92,8 +91,8 @@ abstract class WebSqlContext[I <: Idiom, N <: NamingStrategy](val idiom: I,
 
   def performIO[T, E <: Effect](io: IO[T, E]): Future[T] = {
 
-    def flatten[Y, M[X] <: TraversableOnce[X]](seq: Sequence[Y, M, Effect]): IO[M[Y], Effect] = {
-      seq.in.foldLeft(IO.successful(seq.cbfResultToValue())) { (builder, item) =>
+    def flatten[Y, M[X] <: IterableOnce[X]](seq: Sequence[Y, M, Effect]): IO[M[Y], Effect] = {
+      seq.in.iterator.foldLeft(IO.successful(seq.cbfResultToValue.newBuilder)) { (builder, item) =>
         builder.flatMap(b => item.map(b += _))
       }.map(_.result())
     }

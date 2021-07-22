@@ -4,6 +4,7 @@ import scommons.websql.migrations.WebSqlMigrations._
 import scommons.websql.raw.WebSQLInternalQuery
 import scommons.websql.{Database, Transaction}
 
+import scala.collection.immutable.ArraySeq
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.scalajs.js
@@ -26,7 +27,7 @@ class WebSqlMigrations(db: Database) {
     }
 
     try {
-      run(bundle.map { item =>
+      run(bundle.toSeq.map { item =>
         val (version, name) = parseVersionAndName(item.file)
         WebSqlMigration(version, name, item.content)
       })
@@ -53,8 +54,8 @@ class WebSqlMigrations(db: Database) {
               .partition(_.contains("non-transactional"))
             
             for {
-              _ <- runNonTransactional(nonTransactional)
-              applied <- runTransactional(m, transactional)
+              _ <- runNonTransactional(ArraySeq.unsafeWrapArray(nonTransactional))
+              applied <- runTransactional(m, ArraySeq.unsafeWrapArray(transactional))
             } yield {
               if (applied) {
                 count += 1

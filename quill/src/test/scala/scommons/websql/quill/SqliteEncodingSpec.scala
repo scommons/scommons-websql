@@ -28,7 +28,7 @@ class SqliteEncodingSpec extends AsyncTestSpec {
     encLong = Long.MaxValue,
     encFloat = Float.MaxValue,
     encUuid = UUID.randomUUID(),
-    encByteArray = Array[Byte](1, 2, 3),
+    encByteArray = Seq[Byte](1, 2, 3),
     encDate = new Date(),
     encLocalDate = LocalDate.now()
   )
@@ -85,7 +85,9 @@ class SqliteEncodingSpec extends AsyncTestSpec {
     
     //then
     resultF.map { result =>
-      val Some(res) = result
+      val res = inside(result) {
+        case Some(res) => res
+      }
       res.createdAt.getTime should be >= beforeCreate
       res shouldBe entity.copy(createdAt = res.createdAt)
     }
