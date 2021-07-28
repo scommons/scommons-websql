@@ -2,13 +2,11 @@ package scommons.websql.migrations
 
 import org.scalatest.{Assertion, Succeeded}
 import scommons.nodejs.test.AsyncTestSpec
-import scommons.websql.migrations.WebSqlMigrationsSpec._
 import scommons.websql.migrations.raw.WebSqlMigrationBundleItem
 import scommons.websql.{Database, WebSQL}
 
 import scala.concurrent.Future
 import scala.scalajs.js
-import scala.scalajs.js.annotation.JSExportAll
 
 class WebSqlMigrationsSpec extends AsyncTestSpec {
   
@@ -335,19 +333,20 @@ class WebSqlMigrationsSpec extends AsyncTestSpec {
 
   it should "fail if cannot parse migration version and name" in {
     //given
-    val itemMock = mock[WebSqlMigrationBundleItemMock]
     val loggerMock = mockFunction[String, Unit]
     val migrations = new WebSqlMigrations(null) {
       override val logger = loggerMock
     }
     val fileName = "V01_test.SQL"
     val error = s"Cannot parse migration version and name from: $fileName"
+    val item = js.Dynamic.literal(
+      "file" -> fileName,
+      "content" -> "some test content"
+    ).asInstanceOf[WebSqlMigrationBundleItem]
 
-    (itemMock.file _).expects().returning(fileName)
     loggerMock.expects(s"DB: Error: $error")
 
-    val bundle = js.Array(itemMock.asInstanceOf[WebSqlMigrationBundleItem])
-      .asInstanceOf[WebSqlMigrationBundle]
+    val bundle = js.Array(item).asInstanceOf[WebSqlMigrationBundle]
 
     //when
     val resultF = migrations.runBundle(bundle)
@@ -373,15 +372,5 @@ class WebSqlMigrationsSpec extends AsyncTestSpec {
     }.map { _ =>
       results shouldBe expected
     }
-  }
-}
-
-object WebSqlMigrationsSpec {
-
-  @JSExportAll
-  trait WebSqlMigrationBundleItemMock {
-    
-    def file: String
-    def content: String
   }
 }
