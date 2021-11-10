@@ -15,7 +15,7 @@ object WebSqlCore extends ScalaJsModule {
 
   override def definition: Project = super.definition
     .settings(
-      description := "Scala.js facade for WebSQL API",
+      description := "Scala.js facade for WebSQL/SQLite API",
       coverageExcludedPackages := "scommons.websql.raw",
       
       npmDependencies in Test ++= Seq(
