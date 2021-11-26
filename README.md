@@ -21,6 +21,7 @@ val scommonsWebSqlVer = "1.0.0-SNAPSHOT"
 
 libraryDependencies ++= Seq(
   "org.scommons.websql" %%% "scommons-websql-core" % scommonsWebSqlVer,
+  // see migrations/README.md
   "org.scommons.websql" %%% "scommons-websql-migrations" % scommonsWebSqlVer,
   
   // optional, see quill/README.md
@@ -38,13 +39,19 @@ resolvers += "Sonatype Snapshots" at "https://oss.sonatype.org/content/repositor
 
 #### Open Database
 
+On `react-native` project (using
+[scommons-expo](https://github.com/scommons/scommons-react-native#expo-modules)
+module):
+```scala
+import scommons.expo.sqlite.SQLite
+
+val db = SQLite.openDatabase("myfirst.db")
+```
+
+On `Node.js` project:
 ```scala
 import scommons.websql.WebSQL
 
-// on react-native (see scommons-expo module)
-val db = SQLite.openDatabase("myfirst.db")
-
-// on Node.js
 val db = WebSQL.openDatabase("myfirst.db")
 
 // or in-memory DB, useful for testing
@@ -53,7 +60,7 @@ val db = WebSQL.openDatabase(":memory:")
 
 #### Create DB Schema
 
-You can use `executeSql` method to run raw SQL queries:
+You can use `tx.executeSql` method to run raw SQL queries:
 
 ```scala
 db.transaction { tx =>
@@ -78,53 +85,8 @@ db.transaction { tx =>
 }
 ```
 
-#### Setup DB migrations
-
-To automate DB schema versioning you can use `scommons-websql-migrations`
-library together with `sbt-scommons-plugin`.
-
-First, set the `scommonsBundlesFileFilter` `sbt` build setting:
-```sbt
-import scommons.sbtplugin.ScommonsPlugin.autoImport._
-
-...
-scommonsBundlesFileFilter := "*.sql"
-...
-```
-
-Then add your `SQL` migrations scripts:
-* [V001__initial_db_structure.sql](migrations/src/test/resources/scommons/websql/migrations/V001__initial_db_structure.sql)
-* [V002__rename_db_field.sql](migrations/src/test/resources/scommons/websql/migrations/V002__rename_db_field.sql)
-
-This setup will automatically generate single `bundle.json` file
-during the build with the all SQL scripts content inside.
-
-Then you can read this file from the code:
-```scala
-import scala.scalajs.js
-import scala.scalajs.js.annotation.JSImport
-import scommons.websql.migrations.WebSqlMigrationBundle
-
-@js.native
-@JSImport("./scommons/websql/migrations/bundle.json", JSImport.Namespace)
-object TestMigrationsBundle extends WebSqlMigrationBundle
-```
-
-And run migrations at the start of your app:
-```scala
-import scommons.websql.migrations.WebSqlMigrations
-
-val migrations = new WebSqlMigrations(db)
-
-migrations.runBundle(TestMigrationsBundle)
-```
-
-### How to Build
-
-To build and run all the tests use the following command:
-```bash
-sbt test
-```
+It can be fully automated by using
+[migrations](migrations/README.md) module.
 
 ## Documentation
 
