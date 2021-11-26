@@ -1,4 +1,4 @@
-package showcase.domain
+package scommons.websql.quill.showcase.domain
 
 import io.getquill.SnakeCase
 import scommons.websql.Database

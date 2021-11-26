@@ -8,7 +8,7 @@ To use `quill` bindings include `scommons-websql-quill` library.
 
 #### Create quill DB Context
 
-[Example](src/test/scala/showcase/domain/ShowcaseDBContext.scala)
+[Example](src/test/scala/scommons/websql/quill/showcase/domain/ShowcaseDBContext.scala)
 quill context with pre-defined fields naming (`snake_case`):
 
 ```scala
@@ -21,7 +21,7 @@ class ShowcaseDBContext(db: Database) extends SqliteContext(SnakeCase, db)
 
 #### Create DB Entity
 
-[Example](src/test/scala/showcase/domain/CategoryEntity.scala)
+[Example](src/test/scala/scommons/websql/quill/showcase/domain/CategoryEntity.scala)
 entity class with DB schema definition:
 
 ```scala
@@ -46,11 +46,11 @@ trait CategorySchema {
 
 #### Create DAO
 
-[Example](src/test/scala/showcase/domain/dao/CategoryDao.scala) DAO class with DB queries/actions:
+[Example](src/test/scala/scommons/websql/quill/showcase/domain/dao/CategoryDao.scala) DAO class with DB queries/actions:
 
 ```scala
 import scommons.websql.quill.dao.CommonDao
-import showcase.domain._
+import scommons.websql.quill.showcase.domain._
 
 import scala.concurrent.Future
 
@@ -197,12 +197,12 @@ Done compiling.
 
 #### Running queries
 
-[Example](src/test/scala/showcase/CategoryService.scala)
+[Example](src/test/scala/scommons/websql/quill/showcase/CategoryService.scala)
 business logic/service layer:
 
 ```scala
-import showcase.domain.CategoryEntity
-import showcase.domain.dao.CategoryDao
+import scommons.websql.quill.showcase.domain.CategoryEntity
+import scommons.websql.quill.showcase.domain.dao.CategoryDao
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future

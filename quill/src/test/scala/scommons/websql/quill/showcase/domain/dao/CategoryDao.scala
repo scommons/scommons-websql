@@ -1,7 +1,7 @@
-package showcase.domain.dao
+package scommons.websql.quill.showcase.domain.dao
 
 import scommons.websql.quill.dao.CommonDao
-import showcase.domain._
+import scommons.websql.quill.showcase.domain._
 
 import scala.concurrent.Future
 

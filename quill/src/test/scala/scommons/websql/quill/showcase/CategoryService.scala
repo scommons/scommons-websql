@@ -1,7 +1,7 @@
-package showcase
+package scommons.websql.quill.showcase
 
-import showcase.domain.CategoryEntity
-import showcase.domain.dao.CategoryDao
+import scommons.websql.quill.showcase.domain.CategoryEntity
+import scommons.websql.quill.showcase.domain.dao.CategoryDao
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future

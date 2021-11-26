@@ -15,7 +15,7 @@ trait SqliteEncoders {
   type Encoder[T] = SqliteEncoder[T]
 
   case class SqliteEncoder[T](encoder: BaseEncoder[T]) extends BaseEncoder[T] {
-    override def apply(index: Index, value: T, row: PrepareRow) =
+    def apply(index: Index, value: T, row: PrepareRow): PrepareRow =
       encoder(index, value, row)
   }
 

@@ -1,4 +1,4 @@
-package showcase.domain
+package scommons.websql.quill.showcase.domain
 
 case class CategoryEntity(id: Int,
                           categoryName: String)

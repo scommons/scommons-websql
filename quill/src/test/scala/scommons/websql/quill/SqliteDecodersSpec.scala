@@ -1,12 +1,11 @@
 package scommons.websql.quill
 
-import java.time.LocalDate
-import java.util.{Date, UUID}
-
 import scommons.nodejs.test.TestSpec
 import scommons.websql.Database
-import showcase.domain.ShowcaseDBContext
+import scommons.websql.quill.showcase.domain.ShowcaseDBContext
 
+import java.time.LocalDate
+import java.util.{Date, UUID}
 import scala.scalajs.js
 import scala.scalajs.js.typedarray._
 

@@ -17,7 +17,7 @@ trait SqliteDecoders {
   type Decoder[T] = SqliteDecoder[T]
 
   case class SqliteDecoder[T](decoder: BaseDecoder[T]) extends BaseDecoder[T] {
-    def apply(index: Index, row: ResultRow) = decoder(index, row)
+    def apply(index: Index, row: ResultRow): T = decoder(index, row)
   }
 
   private def decoderUnsafe[T: ClassTag]: Decoder[T] =
