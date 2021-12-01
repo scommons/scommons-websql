@@ -1,4 +1,4 @@
-package scommons.websql.quill
+package scommons.websql
 
 import scommons.nodejs.test.TestSpec
 
@@ -8,7 +8,7 @@ class WebSqlRowSpec extends TestSpec {
 
   it should "fail if wrong type" in {
     //given
-    val row = new WebSqlRow(js.Array(123))
+    val row = WebSqlRow(js.Dynamic.literal("_1" -> 123))
     
     //when
     val ex = the[IllegalStateException] thrownBy {
@@ -21,7 +21,7 @@ class WebSqlRowSpec extends TestSpec {
   
   it should "return value if correct type" in {
     //given
-    val row = new WebSqlRow(js.Array(123))
+    val row = WebSqlRow(js.Dynamic.literal("_1" -> 123))
     
     //when
     val result = row[Int](0)

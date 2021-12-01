@@ -5,7 +5,7 @@ import io.getquill.context.sql.SqlContext
 import io.getquill.idiom.Idiom
 import io.getquill.monad.IOMonad
 import io.getquill.util.Messages
-import scommons.websql.{Database, ResultSet, Transaction}
+import scommons.websql.{Database, ResultSet, Transaction, WebSqlRow}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -99,13 +99,7 @@ abstract class WebSqlContext[I <: Idiom, N <: NamingStrategy](val idiom: I,
     
     def extractResult[R](cmd: SqlCommand[R], resultSet: ResultSet): R = {
       val result = cmd match {
-        case q: ExecQuery[_] =>
-          resultSet.rows.map { row =>
-            val res = js.Object.keys(row.asInstanceOf[js.Object])
-              .map(k => row.selectDynamic(k).asInstanceOf[js.Any])
-
-            q.extractor(new WebSqlRow(res))
-          }.toList
+        case q: ExecQuery[_] => resultSet.rows.map(r => q.extractor(WebSqlRow(r))).toList
         case ExecAction(_, _) => resultSet.rowsAffected
         case ExecActionReturning(sql, _) => resultSet.insertId.getOrElse(
           Messages.fail(s"insertId is required, but wasn't returned: $sql")
