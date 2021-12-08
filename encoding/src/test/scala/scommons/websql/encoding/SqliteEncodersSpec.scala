@@ -1,18 +1,15 @@
-package scommons.websql.quill
-
-import java.time.LocalDate
-import java.util.{Date, UUID}
+package scommons.websql.encoding
 
 import scommons.nodejs.test.TestSpec
 import scommons.websql.Database
-import showcase.domain.ShowcaseDBContext
 
+import java.util.{Date, UUID}
 import scala.scalajs.js
 import scala.scalajs.js.typedarray.Int8Array
 
 class SqliteEncodersSpec extends TestSpec {
 
-  private lazy val ctx = new ShowcaseDBContext(mock[Database])
+  private lazy val ctx = new TestSqliteContext(mock[Database])
   
   import ctx._
 
@@ -121,19 +118,5 @@ class SqliteEncodersSpec extends TestSpec {
     
     //then
     result.asInstanceOf[Double] shouldBe time.toDouble
-  }
-
-  it should "encode LocalDate" in {
-    //given
-    val d = {
-      val now = new js.Date()
-      new js.Date(now.getFullYear(), now.getMonth(), now.getDate())
-    }
-
-    //when
-    val result = encode[LocalDate](LocalDate.of(d.getFullYear, d.getMonth + 1, d.getDate))
-    
-    //then
-    result.asInstanceOf[Double] shouldBe d.getTime
   }
 }

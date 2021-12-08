@@ -19,6 +19,7 @@ lazy val `scommons-websql` = (project in file("."))
 lazy val subProjects = {
   val crossProjects = List[ProjectReference](
     `scommons-websql-core`,
+    `scommons-websql-encoding`,
     `scommons-websql-migrations`,
   )
 
@@ -30,6 +31,7 @@ lazy val subProjects = {
 }
 
 lazy val `scommons-websql-core` = WebSqlCore.definition
+lazy val `scommons-websql-encoding` = WebSqlEncoding.definition
 lazy val `scommons-websql-migrations` = WebSqlMigrations.definition
 lazy val `scommons-websql-quill` = {
   if (scalaJSVersion.startsWith("0.6")) WebSqlQuill.definition

@@ -1,17 +1,15 @@
-package scommons.websql.quill
+package scommons.websql.encoding
 
 import scommons.nodejs.test.TestSpec
 import scommons.websql.{Database, WebSqlRow}
-import scommons.websql.quill.showcase.domain.ShowcaseDBContext
 
-import java.time.LocalDate
 import java.util.{Date, UUID}
 import scala.scalajs.js
 import scala.scalajs.js.typedarray._
 
 class SqliteDecodersSpec extends TestSpec {
 
-  private lazy val ctx = new ShowcaseDBContext(mock[Database])
+  private lazy val ctx = new TestSqliteContext(mock[Database])
   
   import ctx._
 
@@ -127,23 +125,6 @@ class SqliteDecodersSpec extends TestSpec {
     //when & then
     decode[Date](0, WebSqlRow(js.Dynamic.literal("_1" -> date.toISOString()))) shouldBe {
       new Date(date.getTime().toLong)
-    }
-  }
-  
-  it should "decode LocalDate from double" in {
-    //given
-    val d = new js.Date()
-    
-    //when & then
-    decode[LocalDate](0, WebSqlRow(js.Dynamic.literal("_1" -> d.getTime))) shouldBe {
-      LocalDate.of(d.getFullYear, d.getMonth + 1, d.getDate)
-    }
-  }
-  
-  it should "decode LocalDate from string" in {
-    //when & then
-    decode[LocalDate](0, WebSqlRow(js.Dynamic.literal("_1" -> "2020-06-21"))) shouldBe {
-      LocalDate.of(2020, 6, 21)
     }
   }
 }

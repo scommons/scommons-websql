@@ -1,40 +1,39 @@
 package definitions
 
-import common.{Libs, TestLibs}
+import common.TestLibs
 import sbt.Keys._
 import sbt._
+import scalajsbundler.sbtplugin.ScalaJSBundlerPlugin.autoImport._
 import scoverage.ScoverageKeys.coverageExcludedPackages
 
-import scalajsbundler.sbtplugin.ScalaJSBundlerPlugin.autoImport._
+object WebSqlEncoding extends ScalaJsModule {
 
-object WebSqlQuill extends ScalaJsModule {
+  override val id: String = "scommons-websql-encoding"
 
-  override val id: String = "scommons-websql-quill"
-
-  override val base: File = file("quill")
+  override val base: File = file("encoding")
 
   override def definition: Project = super.definition
     .settings(
-      description := "quill bindings for WebSQL/SQLite Api",
-      
-      coverageExcludedPackages := "scommons.websql.quill.WebSqlDialect",
+      description := "Encoders/Decoders for WebSQL/SQLite DB types",
 
+      coverageExcludedPackages :=
+        "scommons.websql.encoding.TupleEncoders" +
+          ";scommons.websql.encoding.TupleDecoders",
+      
       npmDependencies in Test ++= Seq(
         TestLibs.websql
       )
     )
 
   override val internalDependencies: Seq[ClasspathDep[ProjectReference]] = Seq(
-    WebSqlEncoding.definition
+    WebSqlCore.definition
   )
 
   override val superRepoProjectsDependencies: Seq[(String, String, Option[String])] = Seq(
     ("scommons-nodejs", "scommons-nodejs-test", Some("test"))
   )
 
-  override val runtimeDependencies: Def.Initialize[Seq[ModuleID]] = Def.setting(Seq(
-    Libs.quillSql.value
-  ))
+  override val runtimeDependencies: Def.Initialize[Seq[ModuleID]] = Def.setting(Nil)
 
   override val testDependencies: Def.Initialize[Seq[ModuleID]] = Def.setting(Seq(
     TestLibs.scommonsNodejsTest.value
