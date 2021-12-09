@@ -74,8 +74,8 @@ class SqliteDecodersSpec extends TestSpec {
   
   it should "decode Long" in {
     //when & then
-    decode[Long](0, WebSqlRow(js.Dynamic.literal("_1" -> Long.MinValue))) shouldBe Long.MinValue
-    decode[Long](0, WebSqlRow(js.Dynamic.literal("_1" -> Long.MaxValue))) shouldBe Long.MaxValue
+    decode[Long](0, WebSqlRow(js.Dynamic.literal("_1" -> Long.MinValue.toDouble))) shouldBe Long.MinValue
+    decode[Long](0, WebSqlRow(js.Dynamic.literal("_1" -> Long.MaxValue.toDouble))) shouldBe Long.MaxValue
   }
   
   it should "decode Float" in {

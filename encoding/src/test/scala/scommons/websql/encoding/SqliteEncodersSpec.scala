@@ -69,8 +69,8 @@ class SqliteEncodersSpec extends TestSpec {
 
   it should "encode Long" in {
     //when & then
-    encode[Long](Long.MinValue) shouldBe (Long.MinValue: js.Any)
-    encode[Long](Long.MaxValue) shouldBe (Long.MaxValue: js.Any)
+    encode[Long](Long.MinValue) shouldBe (Long.MinValue.toDouble: js.Any)
+    encode[Long](Long.MaxValue) shouldBe (Long.MaxValue.toDouble: js.Any)
   }
 
   it should "encode Float" in {
