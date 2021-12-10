@@ -64,8 +64,8 @@ class SqliteEncodingSpec extends AsyncTestSpec {
     val dao = new TestDao(new ShowcaseDBContext(db))
     val beforeCreate = {
       val now = new js.Date()
-      val utcMillis = js.Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(),
-        now.getUTCHours(), now.getUTCMinutes(), now.getUTCSeconds())
+      val utcMillis = js.Date.UTC(now.getUTCFullYear().toInt, now.getUTCMonth().toInt, now.getUTCDate().toInt,
+        now.getUTCHours().toInt, now.getUTCMinutes().toInt, now.getUTCSeconds().toInt)
       utcMillis.toLong
     }
 
