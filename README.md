@@ -23,6 +23,9 @@ libraryDependencies ++= Seq(
   "org.scommons.websql" %%% "scommons-websql-core" % scommonsWebSqlVer,
   // see migrations/README.md
   "org.scommons.websql" %%% "scommons-websql-migrations" % scommonsWebSqlVer,
+
+  // high level IO effect API (already includes core)
+  "org.scommons.websql" %%% "scommons-websql-io" % scommonsWebSqlVer,
   
   // optional, see quill/README.md
   "org.scommons.websql" %%% "scommons-websql-quill" % scommonsWebSqlVer
