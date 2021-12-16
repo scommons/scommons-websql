@@ -5,10 +5,12 @@ import scommons.websql.{Database, WebSqlRow}
 
 import java.util.{Date, UUID}
 import scala.scalajs.js
+import scala.scalajs.js.Dynamic.literal
 import scala.scalajs.js.typedarray._
 
 class SqliteDecodersSpec extends TestSpec {
 
+  private val sql = "test sql"
   private lazy val ctx = new TestSqliteContext(mock[Database])
   
   import ctx._
@@ -19,69 +21,69 @@ class SqliteDecodersSpec extends TestSpec {
   
   it should "decode Some" in {
     //when & then
-    decode[Option[String]](0, WebSqlRow(js.Dynamic.literal("_1" -> "test"))) shouldBe Some("test")
+    decode[Option[String]](0, WebSqlRow(sql, literal("_1" -> "test"))) shouldBe Some("test")
   }
   
   it should "decode None from js.undefined" in {
     //when & then
-    decode[Option[String]](0, WebSqlRow(js.Dynamic.literal("_1" -> ()))) shouldBe None
+    decode[Option[String]](0, WebSqlRow(sql, literal("_1" -> ()))) shouldBe None
   }
   
   it should "decode None from null" in {
     //when & then
-    decode[Option[String]](0, WebSqlRow(js.Dynamic.literal("_1" -> null))) shouldBe None
+    decode[Option[String]](0, WebSqlRow(sql, literal("_1" -> null))) shouldBe None
   }
   
   it should "decode String" in {
     //when & then
-    decode[String](0, WebSqlRow(js.Dynamic.literal("_1" -> "test"))) shouldBe "test"
+    decode[String](0, WebSqlRow(sql, literal("_1" -> "test"))) shouldBe "test"
   }
   
   it should "decode Double" in {
     //when & then
-    decode[Double](0, WebSqlRow(js.Dynamic.literal("_1" -> Double.MinValue))) shouldBe Double.MinValue
-    decode[Double](0, WebSqlRow(js.Dynamic.literal("_1" -> Double.MaxValue))) shouldBe Double.MaxValue
+    decode[Double](0, WebSqlRow(sql, literal("_1" -> Double.MinValue))) shouldBe Double.MinValue
+    decode[Double](0, WebSqlRow(sql, literal("_1" -> Double.MaxValue))) shouldBe Double.MaxValue
   }
   
   it should "decode Boolean" in {
     //when & then
-    decode[Boolean](0, WebSqlRow(js.Dynamic.literal("_1" -> 0))) shouldBe false
-    decode[Boolean](0, WebSqlRow(js.Dynamic.literal("_1" -> 1))) shouldBe true
+    decode[Boolean](0, WebSqlRow(sql, literal("_1" -> 0))) shouldBe false
+    decode[Boolean](0, WebSqlRow(sql, literal("_1" -> 1))) shouldBe true
   }
   
   it should "decode BigDecimal" in {
     //when & then
-    decode[BigDecimal](0, WebSqlRow(js.Dynamic.literal("_1" -> 12.345))) shouldBe BigDecimal(12.345)
+    decode[BigDecimal](0, WebSqlRow(sql, literal("_1" -> 12.345))) shouldBe BigDecimal(12.345)
   }
   
   it should "decode Byte" in {
     //when & then
-    decode[Byte](0, WebSqlRow(js.Dynamic.literal("_1" -> Byte.MinValue))) shouldBe Byte.MinValue
-    decode[Byte](0, WebSqlRow(js.Dynamic.literal("_1" -> Byte.MaxValue))) shouldBe Byte.MaxValue
+    decode[Byte](0, WebSqlRow(sql, literal("_1" -> Byte.MinValue))) shouldBe Byte.MinValue
+    decode[Byte](0, WebSqlRow(sql, literal("_1" -> Byte.MaxValue))) shouldBe Byte.MaxValue
   }
   
   it should "decode Short" in {
     //when & then
-    decode[Short](0, WebSqlRow(js.Dynamic.literal("_1" -> Short.MinValue))) shouldBe Short.MinValue
-    decode[Short](0, WebSqlRow(js.Dynamic.literal("_1" -> Short.MaxValue))) shouldBe Short.MaxValue
+    decode[Short](0, WebSqlRow(sql, literal("_1" -> Short.MinValue))) shouldBe Short.MinValue
+    decode[Short](0, WebSqlRow(sql, literal("_1" -> Short.MaxValue))) shouldBe Short.MaxValue
   }
   
   it should "decode Int" in {
     //when & then
-    decode[Int](0, WebSqlRow(js.Dynamic.literal("_1" -> Int.MinValue))) shouldBe Int.MinValue
-    decode[Int](0, WebSqlRow(js.Dynamic.literal("_1" -> Int.MaxValue))) shouldBe Int.MaxValue
+    decode[Int](0, WebSqlRow(sql, literal("_1" -> Int.MinValue))) shouldBe Int.MinValue
+    decode[Int](0, WebSqlRow(sql, literal("_1" -> Int.MaxValue))) shouldBe Int.MaxValue
   }
   
   it should "decode Long" in {
     //when & then
-    decode[Long](0, WebSqlRow(js.Dynamic.literal("_1" -> Long.MinValue.toDouble))) shouldBe Long.MinValue
-    decode[Long](0, WebSqlRow(js.Dynamic.literal("_1" -> Long.MaxValue.toDouble))) shouldBe Long.MaxValue
+    decode[Long](0, WebSqlRow(sql, literal("_1" -> Long.MinValue.toDouble))) shouldBe Long.MinValue
+    decode[Long](0, WebSqlRow(sql, literal("_1" -> Long.MaxValue.toDouble))) shouldBe Long.MaxValue
   }
   
   it should "decode Float" in {
     //when & then
-    decode[Float](0, WebSqlRow(js.Dynamic.literal("_1" -> Float.MinValue))) shouldBe Float.MinValue
-    decode[Float](0, WebSqlRow(js.Dynamic.literal("_1" -> Float.MaxValue))) shouldBe Float.MaxValue
+    decode[Float](0, WebSqlRow(sql, literal("_1" -> Float.MinValue))) shouldBe Float.MinValue
+    decode[Float](0, WebSqlRow(sql, literal("_1" -> Float.MaxValue))) shouldBe Float.MaxValue
   }
 
   it should "decode UUID" in {
@@ -89,7 +91,7 @@ class SqliteDecodersSpec extends TestSpec {
     val value = UUID.randomUUID()
 
     //when & then
-    decode[UUID](0, WebSqlRow(js.Dynamic.literal("_1" -> value.toString))) shouldBe value
+    decode[UUID](0, WebSqlRow(sql, literal("_1" -> value.toString))) shouldBe value
   }
   
   it should "decode Seq[Byte]" in {
@@ -97,7 +99,7 @@ class SqliteDecodersSpec extends TestSpec {
     val data = Seq[Byte](1, 2, 3)
     
     //when & then
-    decode[Seq[Byte]](0, WebSqlRow(js.Dynamic.literal("_1" -> data.toArray.toTypedArray))) shouldBe data
+    decode[Seq[Byte]](0, WebSqlRow(sql, literal("_1" -> data.toArray.toTypedArray))) shouldBe data
   }
   
   it should "decode Array[Byte]" in {
@@ -105,7 +107,7 @@ class SqliteDecodersSpec extends TestSpec {
     val data = Array[Byte](1, 2, 3)
     
     //when & then
-    decode[Array[Byte]](0, WebSqlRow(js.Dynamic.literal("_1" -> data.toTypedArray))) shouldBe data
+    decode[Array[Byte]](0, WebSqlRow(sql, literal("_1" -> data.toTypedArray))) shouldBe data
   }
   
   it should "decode Date from double" in {
@@ -113,7 +115,7 @@ class SqliteDecodersSpec extends TestSpec {
     val date = new js.Date()
     
     //when & then
-    decode[Date](0, WebSqlRow(js.Dynamic.literal("_1" -> date.getTime))) shouldBe {
+    decode[Date](0, WebSqlRow(sql, literal("_1" -> date.getTime))) shouldBe {
       new Date(date.getTime.toLong)
     }
   }
@@ -123,8 +125,43 @@ class SqliteDecodersSpec extends TestSpec {
     val date = new js.Date()
     
     //when & then
-    decode[Date](0, WebSqlRow(js.Dynamic.literal("_1" -> date.toISOString()))) shouldBe {
+    decode[Date](0, WebSqlRow(sql, literal("_1" -> date.toISOString()))) shouldBe {
       new Date(date.getTime().toLong)
+    }
+  }
+
+  it should "decode Tuple" in {
+    //when & then
+    decode[(Int, String)](0, WebSqlRow(sql, literal(
+      "_0" -> 1,
+      "_1" -> "test"
+    ))) shouldBe {
+      (1, "test")
+    }
+  }
+
+  ignore should "decode nested Tuple" in {
+    //when & then
+    decode[((Int, String), (Int, String))](0, WebSqlRow(sql, literal(
+      "_0" -> 1,
+      "_1" -> "test",
+      "_2" -> 2,
+      "_3" -> "test2"
+    ))) shouldBe {
+      ((1, "test"), (2, "test2"))
+    }
+  }
+
+  ignore should "decode nested Option[Tuple]" in {
+    //when & then
+    decode[((Int, String), Option[(Int, String)], Int)](0, WebSqlRow(sql, literal(
+      "_0" -> 1,
+      "_1" -> "test",
+      "_2" -> js.undefined,
+      "_3" -> js.undefined,
+      "_4" -> 2
+    ))) shouldBe {
+      ((1, "test"), None, 2)
     }
   }
 }

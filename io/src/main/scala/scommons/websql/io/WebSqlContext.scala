@@ -106,7 +106,7 @@ abstract class WebSqlContext(val db: Database)
 
     def extractResult[R](cmd: SqlCommand[R], resultSet: ResultSet): R = {
       val result = cmd match {
-        case q: ExecQuery[_] => resultSet.rows.map(r => q.extractor(WebSqlRow(r))).toList
+        case q: ExecQuery[_] => resultSet.rows.map(r => q.extractor(WebSqlRow(q.sql, r))).toList
         case ExecAction(_, _) => resultSet.rowsAffected
         case ExecActionReturning(sql, _) => resultSet.insertId.getOrElse(
           throw new IllegalStateException(s"insertId is required, but wasn't returned: $sql")

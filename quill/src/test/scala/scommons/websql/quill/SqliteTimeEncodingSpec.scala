@@ -6,9 +6,11 @@ import scommons.websql.{Database, WebSqlRow}
 
 import java.time.LocalDate
 import scala.scalajs.js
+import scala.scalajs.js.Dynamic.literal
 
 class SqliteTimeEncodingSpec extends TestSpec {
 
+  private val sql = "test sql"
   private lazy val ctx = new ShowcaseDBContext(mock[Database])
   
   import ctx._
@@ -40,14 +42,14 @@ class SqliteTimeEncodingSpec extends TestSpec {
     val d = new js.Date()
     
     //when & then
-    decode[LocalDate](0, WebSqlRow(js.Dynamic.literal("_1" -> d.getTime))) shouldBe {
+    decode[LocalDate](0, WebSqlRow(sql, literal("_1" -> d.getTime))) shouldBe {
       LocalDate.of(d.getFullYear, d.getMonth + 1, d.getDate)
     }
   }
   
   it should "decode LocalDate from string" in {
     //when & then
-    decode[LocalDate](0, WebSqlRow(js.Dynamic.literal("_1" -> "2020-06-21"))) shouldBe {
+    decode[LocalDate](0, WebSqlRow(sql, literal("_1" -> "2020-06-21"))) shouldBe {
       LocalDate.of(2020, 6, 21)
     }
   }

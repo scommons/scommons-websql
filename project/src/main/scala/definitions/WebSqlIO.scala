@@ -4,6 +4,7 @@ import common.TestLibs
 import sbt.Keys._
 import sbt._
 import scalajsbundler.sbtplugin.ScalaJSBundlerPlugin.autoImport._
+import scoverage.ScoverageKeys.coverageExcludedPackages
 
 object WebSqlIO extends ScalaJsModule {
 
@@ -14,6 +15,8 @@ object WebSqlIO extends ScalaJsModule {
   override def definition: Project = super.definition
     .settings(
       description := "High level WebSQL/SQLite IO monad API",
+
+      coverageExcludedPackages := "scommons.websql.io.IOMonad",
 
       npmDependencies in Test ++= Seq(
         TestLibs.websql
