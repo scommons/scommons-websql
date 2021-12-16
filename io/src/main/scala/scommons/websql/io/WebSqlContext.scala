@@ -11,6 +11,7 @@ import scala.util.{Success, Try}
 abstract class WebSqlContext(val db: Database)
   extends WebSqlEncoding
     with TupleEncoders
+    with TupleOptDecoders
     with TupleDecoders
     with IOMonad {
 

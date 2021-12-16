@@ -7,7 +7,22 @@ class WebSqlRow private(sql: String,
                         columns: js.Array[String],
                         val data: js.Array[js.Any]) {
 
+  private var nextIndex = 0
+  
+  def index: Int = nextIndex
+  
+  def isDefinedAt(index: Int): Boolean = {
+    val v = data(index)
+    v != null && !js.isUndefined(v)
+  }
+  
+  def skipIndices(n: Int): Unit = {
+    nextIndex += n
+  }
+
   def apply[T](index: Int)(implicit t: ClassTag[T]): T = {
+    nextIndex = index + 1
+
     data(index) match {
       case v: T => v
       case other =>

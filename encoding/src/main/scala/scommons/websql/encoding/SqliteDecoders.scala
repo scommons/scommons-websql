@@ -16,8 +16,10 @@ trait SqliteDecoders extends BaseEncodingDsl {
 
   implicit def optionDecoder[T](implicit d: Decoder[T]): Decoder[Option[T]] =
     WebSqlDecoder { (index: Index, row: ResultRow) =>
-      val v = row.data(index)
-      if (v == null || js.isUndefined(v)) None
+      if (!row.isDefinedAt(index)) {
+        row.skipIndices(1)
+        None
+      }
       else Some(d(index, row))
     }
 

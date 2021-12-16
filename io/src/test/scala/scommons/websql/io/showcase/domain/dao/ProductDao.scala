@@ -20,15 +20,19 @@ class ProductDao(val ctx: ShowcaseDBContext) extends CommonDao {
     ctx.performIO(ctx.runQuery(
       sql =
         """SELECT
-          |  p.id AS _0, p.name AS _1, p.category_id AS _2, c.id AS _4, c.category_name AS _3
+          |  p.id             AS _0,
+          |  p.name           AS _1,
+          |  p.category_id    AS _2,
+          |  c.id             AS _3,
+          |  c.category_name  AS _4
           |FROM (
           |  SELECT id, name, category_id FROM products ORDER BY id
           |) AS p
           |INNER JOIN categories c ON p.category_id = c.id
           |""".stripMargin,
-      extractor = { case (pId, pName, pcId, cId, cName) =>
-        (ProductEntity(pId, pName, pcId), CategoryEntity(cId, cName))
-      }: ((Int, String, Option[Int], Int, String)) =>
+      extractor = { case (p, c) =>
+        (ProductEntity.tupled(p), CategoryEntity.tupled(c))
+      }: (((Int, String, Option[Int]), (Int, String))) =>
         (ProductEntity, CategoryEntity)
     ))
   }
@@ -37,17 +41,19 @@ class ProductDao(val ctx: ShowcaseDBContext) extends CommonDao {
     ctx.performIO(ctx.runQuery(
       sql =
         """SELECT
-          |  p.id AS _0, p.name AS _1, p.category_id AS _2, c.id AS _3, c.category_name AS _4
+          |  p.id             AS _0,
+          |  p.name           AS _1,
+          |  p.category_id    AS _2,
+          |  c.id             AS _3,
+          |  c.category_name  AS _4
           |FROM (
           |  SELECT id, name, category_id FROM products ORDER BY id
           |) AS p
           |LEFT JOIN categories c ON p.category_id = c.id
           |""".stripMargin,
-      extractor = { case (pId, pName, pcId, cId, cName) =>
-        (ProductEntity(pId, pName, pcId), cId.flatMap { id =>
-          cName.map(name => CategoryEntity(id, name))
-        })
-      }: ((Int, String, Option[Int], Option[Int], Option[String])) =>
+      extractor = { case (p, c) =>
+        (ProductEntity.tupled(p), c.map(CategoryEntity.tupled))
+      }: (((Int, String, Option[Int]), Option[(Int, String)])) =>
         (ProductEntity, Option[CategoryEntity])
     ))
   }

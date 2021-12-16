@@ -140,7 +140,7 @@ class SqliteDecodersSpec extends TestSpec {
     }
   }
 
-  ignore should "decode nested Tuple" in {
+  it should "decode nested Tuple" in {
     //when & then
     decode[((Int, String), (Int, String))](0, WebSqlRow(sql, literal(
       "_0" -> 1,
@@ -152,7 +152,7 @@ class SqliteDecodersSpec extends TestSpec {
     }
   }
 
-  ignore should "decode nested Option[Tuple]" in {
+  it should "decode nested Option[Tuple] as None" in {
     //when & then
     decode[((Int, String), Option[(Int, String)], Int)](0, WebSqlRow(sql, literal(
       "_0" -> 1,
@@ -162,6 +162,19 @@ class SqliteDecodersSpec extends TestSpec {
       "_4" -> 2
     ))) shouldBe {
       ((1, "test"), None, 2)
+    }
+  }
+
+  it should "decode nested Option[Tuple] as Some" in {
+    //when & then
+    decode[((Int, String), Option[(Int, String)], Int)](0, WebSqlRow(sql, literal(
+      "_0" -> 1,
+      "_1" -> "test",
+      "_2" -> 2,
+      "_3" -> "test2",
+      "_4" -> 3
+    ))) shouldBe {
+      ((1, "test"), Some((2, "test2")), 3)
     }
   }
 }

@@ -18,6 +18,7 @@ object WebSqlEncoding extends ScalaJsModule {
 
       coverageExcludedPackages :=
         "scommons.websql.encoding.TupleEncoders" +
+          ";scommons.websql.encoding.TupleOptDecoders" +
           ";scommons.websql.encoding.TupleDecoders",
       
       npmDependencies in Test ++= Seq(
