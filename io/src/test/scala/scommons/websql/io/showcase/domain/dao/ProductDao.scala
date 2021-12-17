@@ -20,11 +20,11 @@ class ProductDao(val ctx: ShowcaseDBContext) extends CommonDao {
     ctx.performIO(ctx.runQuery(
       sql =
         """SELECT
-          |  p.id             AS _0,
-          |  p.name           AS _1,
-          |  p.category_id    AS _2,
-          |  c.id             AS _3,
-          |  c.category_name  AS _4
+          |  p.id             AS _0, -- ******************************* 
+          |  p.name           AS _1, -- * NOTE:
+          |  p.category_id    AS _2, -- *   for JOIN queries from different tables
+          |  c.id             AS _3, -- *   ALWAYS specify custom unique fields names !!!
+          |  c.category_name  AS _4  -- *******************************
           |FROM (
           |  SELECT id, name, category_id FROM products ORDER BY id
           |) AS p
@@ -41,11 +41,11 @@ class ProductDao(val ctx: ShowcaseDBContext) extends CommonDao {
     ctx.performIO(ctx.runQuery(
       sql =
         """SELECT
-          |  p.id             AS _0,
-          |  p.name           AS _1,
-          |  p.category_id    AS _2,
-          |  c.id             AS _3,
-          |  c.category_name  AS _4
+          |  p.id             AS _0, -- ******************************* 
+          |  p.name           AS _1, -- * NOTE:
+          |  p.category_id    AS _2, -- *   for JOIN queries from different tables
+          |  c.id             AS _3, -- *   ALWAYS specify custom unique fields names !!!
+          |  c.category_name  AS _4  -- *******************************
           |FROM (
           |  SELECT id, name, category_id FROM products ORDER BY id
           |) AS p

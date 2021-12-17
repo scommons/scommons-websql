@@ -1,4 +1,7 @@
 
+[![scala-index](https://index.scala-lang.org/scommons/scommons-websql/scommons-websql-quill/latest-by-scala-version.svg?targetType=Js)](https://index.scala-lang.org/scommons/scommons-websql/scommons-websql-quill)
+[![Scala.js 0.6](https://www.scala-js.org/assets/badges/scalajs-0.6.29.svg)](https://www.scala-js.org)
+
 ## scommons-websql-quill
 [quill](https://getquill.io) bindings for [WebSQL API](https://www.w3.org/TR/webdatabase/)
 
