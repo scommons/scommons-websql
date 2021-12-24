@@ -1,9 +1,8 @@
 
 [![Build Status](https://travis-ci.com/scommons/scommons-websql.svg?branch=master)](https://travis-ci.com/scommons/scommons-websql)
 [![Coverage Status](https://coveralls.io/repos/github/scommons/scommons-websql/badge.svg?branch=master)](https://coveralls.io/github/scommons/scommons-websql?branch=master)
-[![scala-index](https://index.scala-lang.org/scommons/scommons-websql/scommons-websql-core/latest-by-scala-version.svg?targetType=Js)](https://index.scala-lang.org/scommons/scommons-websql/scommons-websql-core)
-[![Scala.js 0.6](https://www.scala-js.org/assets/badges/scalajs-0.6.29.svg)](https://www.scala-js.org)
-[![Scala.js 1.0](https://www.scala-js.org/assets/badges/scalajs-1.1.0.svg)](https://www.scala-js.org)
+[![scala-index](https://index.scala-lang.org/scommons/scommons-websql/scommons-websql-core/latest.svg)](https://index.scala-lang.org/scommons/scommons-websql/scommons-websql-core)
+[![Scala.js](https://www.scala-js.org/assets/badges/scalajs-1.1.0.svg)](https://www.scala-js.org)
 
 ## Scala Commons Web SQL
 [Scala.js](https://www.scala-js.org) facade for [WebSQL API](https://www.w3.org/TR/webdatabase/)
@@ -25,10 +24,7 @@ libraryDependencies ++= Seq(
   "org.scommons.websql" %%% "scommons-websql-migrations" % scommonsWebSqlVer,
 
   // high level IO effect API (already includes core)
-  "org.scommons.websql" %%% "scommons-websql-io" % scommonsWebSqlVer,
-  
-  // optional, see quill/README.md
-  "org.scommons.websql" %%% "scommons-websql-quill" % scommonsWebSqlVer
+  "org.scommons.websql" %%% "scommons-websql-io" % scommonsWebSqlVer
 )
 ```
 
@@ -124,8 +120,12 @@ case class CategoryEntity(id: Int,
 
 #### Create DAO
 
+Data Access Object (`DAO`) layer has very similar query `IO` API
+interface as [quill](quill/README.md), except that `SQL` has
+to be written explicitly rather than generated during the build.
+
 [Example 1](io/src/test/scala/scommons/websql/io/showcase/domain/dao/CategoryDao.scala)
-Data Access Object (`DAO`) class with basic DB queries/actions:
+`DAO` class with basic DB queries/actions:
 
 ```scala
 import scommons.websql.io.dao.CommonDao

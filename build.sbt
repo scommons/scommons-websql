@@ -14,28 +14,19 @@ lazy val `scommons-websql` = (project in file("."))
   .settings(
     ideExcludedDirectories += baseDirectory.value / "docs" / "_site"
   )
-  .aggregate(subProjects: _*)
-
-lazy val subProjects = {
-  val crossProjects = List[ProjectReference](
+  .aggregate(
     `scommons-websql-core`,
     `scommons-websql-encoding`,
     `scommons-websql-io`,
-    `scommons-websql-migrations`,
+    `scommons-websql-migrations`
+    //`scommons-websql-quill`
   )
-
-  //TODO: quill-sql don't support Scala.js 1.1+ yet
-  if (scalaJSVersion.startsWith("0.6")) {
-    crossProjects :+ (`scommons-websql-quill`: ProjectReference)
-  }
-  else crossProjects
-}
 
 lazy val `scommons-websql-core` = WebSqlCore.definition
 lazy val `scommons-websql-encoding` = WebSqlEncoding.definition
 lazy val `scommons-websql-io` = WebSqlIO.definition
 lazy val `scommons-websql-migrations` = WebSqlMigrations.definition
-lazy val `scommons-websql-quill` = {
-  if (scalaJSVersion.startsWith("0.6")) WebSqlQuill.definition
-  else project in file("target")
-}
+
+//TODO: quill-sql don't support Scala.js 1.1+ yet
+//  see: https://github.com/zio/zio-quill/issues/2175
+//lazy val `scommons-websql-quill` = WebSqlQuill.definition

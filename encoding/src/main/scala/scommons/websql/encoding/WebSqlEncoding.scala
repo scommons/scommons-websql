@@ -11,4 +11,10 @@ trait WebSqlEncoding extends BaseEncodingDsl {
 
   implicit def mappedDecoder[I, O](implicit mapped: MappedEncoding[I, O], d: Decoder[I]): Decoder[O] =
     WebSqlDecoder((index: Index, row: ResultRow) => mapped.f(d.apply(index, row)))
+
+  implicit def seqEncoder[T](implicit e: Encoder[T]): Encoder[Seq[T]] =
+    WebSqlEncoder { (_: Index, seq: Seq[T], row: PrepareRow) =>
+      val values = seq.map(v => e(-1, v, Nil).head)
+      row :++ values
+    }
 }
