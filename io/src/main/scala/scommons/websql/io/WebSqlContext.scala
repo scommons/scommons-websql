@@ -140,6 +140,8 @@ abstract class WebSqlContext(val db: Database)
           )
         case seq @ Sequence(_, _) => loop(flatten(seq), stack)
         case TransformWith(a, fA) => loop(a, fA.asInstanceOf[Try[_] => IO[_, _]] :: stack)
+        case _ =>
+          throw new IllegalStateException(s"Unknown IO: $io")
       }
     }
 

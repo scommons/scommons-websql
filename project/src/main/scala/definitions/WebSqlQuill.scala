@@ -19,7 +19,7 @@ object WebSqlQuill extends ScalaJsModule {
       
       coverageExcludedPackages := "scommons.websql.quill.WebSqlDialect",
 
-      npmDependencies in Test ++= Seq(
+      Test / npmDependencies ++= Seq(
         TestLibs.websql
       )
     )

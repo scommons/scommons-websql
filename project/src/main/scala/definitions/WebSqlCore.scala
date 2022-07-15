@@ -18,7 +18,7 @@ object WebSqlCore extends ScalaJsModule {
       description := "Scala.js facade for WebSQL/SQLite API",
       coverageExcludedPackages := "scommons.websql.raw",
       
-      npmDependencies in Test ++= Seq(
+      Test / npmDependencies ++= Seq(
         TestLibs.websql
       )
     )

@@ -51,10 +51,11 @@ trait SqliteDecoders extends BaseEncodingDsl {
   implicit val jsDateDecoder: Decoder[js.Date] =
     WebSqlDecoder { (index: Index, row: ResultRow) =>
       row[Any](index) match {
-        case v: String =>
+        case v: Double => new js.Date(v)
+        case value =>
+          val v = value.toString
           val gmt = if (v.endsWith("Z") || v.contains("GMT")) v else s"$v GMT"
           new js.Date(gmt)
-        case v: Double => new js.Date(v)
       }
     }
 

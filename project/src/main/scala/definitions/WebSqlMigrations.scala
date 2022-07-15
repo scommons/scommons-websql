@@ -21,7 +21,7 @@ object WebSqlMigrations extends ScalaJsModule {
 
       scommonsBundlesFileFilter := "*.sql",
 
-      npmDependencies in Test ++= Seq(
+      Test / npmDependencies ++= Seq(
         TestLibs.websql
       )
     )

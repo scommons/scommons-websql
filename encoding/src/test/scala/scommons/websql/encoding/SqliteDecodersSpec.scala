@@ -115,8 +115,8 @@ class SqliteDecodersSpec extends TestSpec {
     val date = new js.Date()
     
     //when & then
-    decode[Date](0, WebSqlRow(sql, literal("_1" -> date.getTime))) shouldBe {
-      new Date(date.getTime.toLong)
+    decode[Date](0, WebSqlRow(sql, literal("_1" -> date.getTime()))) shouldBe {
+      new Date(date.getTime().toLong)
     }
   }
   
