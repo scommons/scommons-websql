@@ -21,7 +21,7 @@ object WebSqlEncoding extends ScalaJsModule {
           ";scommons.websql.encoding.TupleOptDecoders" +
           ";scommons.websql.encoding.TupleDecoders",
       
-      npmDependencies in Test ++= Seq(
+      Test / npmDependencies ++= Seq(
         TestLibs.websql
       )
     )

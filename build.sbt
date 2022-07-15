@@ -6,7 +6,7 @@ lazy val `scommons-websql` = (project in file("."))
   .settings(CommonModule.settings: _*)
   .settings(WebSqlModule.settings: _*)
   .settings(
-    skip in publish := true,
+    publish / skip := true,
     publish := ((): Unit),
     publishLocal := ((): Unit),
     publishM2 := ((): Unit)

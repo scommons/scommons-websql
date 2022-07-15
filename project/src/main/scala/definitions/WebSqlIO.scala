@@ -18,7 +18,7 @@ object WebSqlIO extends ScalaJsModule {
 
       coverageExcludedPackages := "scommons.websql.io.IOMonad",
 
-      npmDependencies in Test ++= Seq(
+      Test / npmDependencies ++= Seq(
         TestLibs.websql
       )
     )

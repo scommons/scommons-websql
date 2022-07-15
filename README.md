@@ -2,7 +2,7 @@
 [![CI](https://github.com/scommons/scommons-websql/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/scommons/scommons-websql/actions/workflows/ci.yml?query=workflow%3Aci+branch%3Amaster)
 [![Coverage Status](https://coveralls.io/repos/github/scommons/scommons-websql/badge.svg?branch=master)](https://coveralls.io/github/scommons/scommons-websql?branch=master)
 [![scala-index](https://index.scala-lang.org/scommons/scommons-websql/scommons-websql-core/latest.svg)](https://index.scala-lang.org/scommons/scommons-websql/scommons-websql-core)
-[![Scala.js](https://www.scala-js.org/assets/badges/scalajs-1.1.0.svg)](https://www.scala-js.org)
+[![Scala.js](https://www.scala-js.org/assets/badges/scalajs-1.5.0.svg)](https://www.scala-js.org)
 
 ## Scala Commons Web SQL
 [Scala.js](https://www.scala-js.org) facade for [WebSQL API](https://www.w3.org/TR/webdatabase/)
