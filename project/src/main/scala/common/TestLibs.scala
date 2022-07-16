@@ -10,5 +10,5 @@ object TestLibs extends CommonTestLibs {
   lazy val scommonsNodejsTest = Def.setting("org.scommons.nodejs" %%% "scommons-nodejs-test" % scommonsNodejsVersion)
   
   //npmDependencies
-  lazy val websql: (String, String) = "websql" -> "1.0.0"
+  lazy val websql: (String, String) = "websql" -> "2.0.3"
 }
