@@ -6,7 +6,7 @@ import scommons.sbtplugin.project.CommonLibs
 
 object Libs extends CommonLibs {
 
-  val scommonsNodejsVersion = "1.0.0-SNAPSHOT"
+  val scommonsNodejsVersion = "0.9.0"
 
   lazy val quillSql = Def.setting("io.getquill" %%% "quill-sql" % "3.7.1")
 }
